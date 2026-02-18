@@ -1,10 +1,10 @@
 package com.example.springdemo.service;
 
 import com.example.springdemo.biz.CoinChainConfigBiz;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.springdemo.domain.Coin;
 import com.example.springdemo.domain.CoinChainConfig;
-import com.example.springdemo.domain.CoinChainConfigExtra;
-import com.example.springdemo.repository.CoinChainConfigExtraRepository;
 import com.example.springdemo.repository.CoinChainConfigRepository;
 import com.example.springdemo.repository.CoinRepository;
 import org.springframework.stereotype.Service;
@@ -14,15 +14,15 @@ import java.util.List;
 
 @Service
 public class CoinChainConfigService implements CoinChainConfigBiz {
+    private static final int EXTRA_JSON_MAX_LENGTH = 4000;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final CoinChainConfigRepository coinChainConfigRepository;
-    private final CoinChainConfigExtraRepository coinChainConfigExtraRepository;
     private final CoinRepository coinRepository;
 
     public CoinChainConfigService(CoinChainConfigRepository coinChainConfigRepository,
-                                  CoinChainConfigExtraRepository coinChainConfigExtraRepository,
                                   CoinRepository coinRepository) {
         this.coinChainConfigRepository = coinChainConfigRepository;
-        this.coinChainConfigExtraRepository = coinChainConfigExtraRepository;
         this.coinRepository = coinRepository;
     }
 
@@ -38,7 +38,7 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
     @Override
     public CoinChainConfig create(Long coinId, String chainCode, String rpcUrl, String collectionAddress, String withdrawAddress,
                                   BigDecimal minWithdrawAmount, Integer withdrawPrecision,
-                                  BigDecimal minDepositAmount, Integer depositPrecision, Boolean enabled) {
+                                  BigDecimal minDepositAmount, Integer depositPrecision, String extraJson, Boolean enabled) {
         validateCoinExists(coinId);
         String normalizedChainCode = requireText(chainCode, "chainCode").toUpperCase();
 
@@ -56,6 +56,7 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
             validatePrecision(withdrawPrecision, "withdrawPrecision"),
             requireAmount(minDepositAmount, "minDepositAmount"),
             validatePrecision(depositPrecision, "depositPrecision"),
+            normalizeExtraJson(extraJson),
             enabled == null ? Boolean.TRUE : enabled
         );
         return coinChainConfigRepository.save(config);
@@ -64,7 +65,7 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
     @Override
     public CoinChainConfig update(Long id, Long coinId, String chainCode, String rpcUrl, String collectionAddress, String withdrawAddress,
                                   BigDecimal minWithdrawAmount, Integer withdrawPrecision,
-                                  BigDecimal minDepositAmount, Integer depositPrecision, Boolean enabled) {
+                                  BigDecimal minDepositAmount, Integer depositPrecision, String extraJson, Boolean enabled) {
         validatePositiveId(id, "id");
         validateCoinExists(coinId);
         CoinChainConfig config = coinChainConfigRepository.findById(id)
@@ -84,46 +85,10 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
         config.setWithdrawPrecision(validatePrecision(withdrawPrecision, "withdrawPrecision"));
         config.setMinDepositAmount(requireAmount(minDepositAmount, "minDepositAmount"));
         config.setDepositPrecision(validatePrecision(depositPrecision, "depositPrecision"));
+        config.setExtraJson(normalizeExtraJson(extraJson));
         config.setEnabled(enabled == null ? Boolean.TRUE : enabled);
 
         return coinChainConfigRepository.save(config);
-    }
-
-    @Override
-    public List<CoinChainConfigExtra> listExtras(Long chainConfigId) {
-        validateChainConfigExists(chainConfigId);
-        return coinChainConfigExtraRepository.findByChainConfigIdOrderByIdAsc(chainConfigId);
-    }
-
-    @Override
-    public CoinChainConfigExtra upsertExtra(Long chainConfigId, String paramKey, String paramValue) {
-        validateChainConfigExists(chainConfigId);
-        String normalizedKey = requireText(paramKey, "paramKey");
-        String normalizedValue = requireText(paramValue, "paramValue");
-
-        CoinChainConfigExtra existing = coinChainConfigExtraRepository
-            .findByChainConfigIdAndParamKeyIgnoreCase(chainConfigId, normalizedKey)
-            .orElse(null);
-        if (existing != null) {
-            existing.setParamValue(normalizedValue);
-            return coinChainConfigExtraRepository.save(existing);
-        }
-
-        CoinChainConfigExtra extra = new CoinChainConfigExtra(chainConfigId, normalizedKey, normalizedValue);
-        return coinChainConfigExtraRepository.save(extra);
-    }
-
-    @Override
-    public void deleteExtra(Long chainConfigId, Long extraId) {
-        validateChainConfigExists(chainConfigId);
-        validatePositiveId(extraId, "extraId");
-
-        CoinChainConfigExtra extra = coinChainConfigExtraRepository.findById(extraId)
-            .orElseThrow(() -> new IllegalArgumentException("extra config not found"));
-        if (!chainConfigId.equals(extra.getChainConfigId())) {
-            throw new IllegalArgumentException("extra config does not belong to this chain config");
-        }
-        coinChainConfigExtraRepository.deleteById(extraId);
     }
 
     private void validateCoinExists(Long coinId) {
@@ -132,12 +97,6 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
         if (Boolean.FALSE.equals(coin.getEnabled())) {
             throw new IllegalArgumentException("selected coin is disabled");
         }
-    }
-
-    private void validateChainConfigExists(Long chainConfigId) {
-        validatePositiveId(chainConfigId, "chainConfigId");
-        coinChainConfigRepository.findById(chainConfigId)
-            .orElseThrow(() -> new IllegalArgumentException("coin chain config not found"));
     }
 
     private void validatePositiveId(Long id, String fieldName) {
@@ -165,5 +124,27 @@ public class CoinChainConfigService implements CoinChainConfigBiz {
             throw new IllegalArgumentException(field + " must be a non-negative integer");
         }
         return precision;
+    }
+
+    private String normalizeExtraJson(String extraJson) {
+        String normalized = extraJson == null ? "{}" : extraJson.trim();
+        if (normalized.isEmpty()) {
+            normalized = "{}";
+        }
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(normalized);
+            if (node == null || !node.isObject()) {
+                throw new IllegalArgumentException("extraJson must be a valid JSON object");
+            }
+            String compactJson = OBJECT_MAPPER.writeValueAsString(node);
+            if (compactJson.length() > EXTRA_JSON_MAX_LENGTH) {
+                throw new IllegalArgumentException("extraJson exceeds length limit " + EXTRA_JSON_MAX_LENGTH);
+            }
+            return compactJson;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("extraJson must be a valid JSON object");
+        }
     }
 }

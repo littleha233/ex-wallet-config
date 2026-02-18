@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS coin_chain_config (
     withdraw_precision INT NOT NULL,
     min_deposit_amount DECIMAL(38,18) NOT NULL,
     deposit_precision INT NOT NULL,
+    extra_json VARCHAR(4000) NOT NULL DEFAULT '{}',
     enabled BIT(1) NOT NULL DEFAULT b'1',
     create_time DATETIME(6),
     update_time DATETIME(6),
@@ -33,16 +34,4 @@ CREATE TABLE IF NOT EXISTS coin_chain_config (
     INDEX idx_coin_chain_config_coin_id (coin_id),
     INDEX idx_coin_chain_config_chain_code (chain_code),
     INDEX idx_coin_chain_config_enabled (enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS coin_chain_config_extra (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    chain_config_id BIGINT NOT NULL,
-    param_key VARCHAR(128) NOT NULL,
-    param_value VARCHAR(2000) NOT NULL,
-    create_time DATETIME(6),
-    update_time DATETIME(6),
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_coin_chain_config_extra_key (chain_config_id, param_key),
-    INDEX idx_coin_chain_config_extra_chain_config_id (chain_config_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

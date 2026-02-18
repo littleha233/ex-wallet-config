@@ -54,6 +54,9 @@ public class CoinChainConfig {
     @Column(name = "deposit_precision", nullable = false)
     private Integer depositPrecision;
 
+    @Column(name = "extra_json", nullable = false, length = 4000)
+    private String extraJson;
+
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
@@ -69,7 +72,7 @@ public class CoinChainConfig {
 
     public CoinChainConfig(Long coinId, String chainCode, String rpcUrl, String collectionAddress,
                            String withdrawAddress, BigDecimal minWithdrawAmount, Integer withdrawPrecision,
-                           BigDecimal minDepositAmount, Integer depositPrecision, Boolean enabled) {
+                           BigDecimal minDepositAmount, Integer depositPrecision, String extraJson, Boolean enabled) {
         this.coinId = coinId;
         this.chainCode = chainCode;
         this.rpcUrl = rpcUrl;
@@ -79,6 +82,7 @@ public class CoinChainConfig {
         this.withdrawPrecision = withdrawPrecision;
         this.minDepositAmount = minDepositAmount;
         this.depositPrecision = depositPrecision;
+        this.extraJson = extraJson;
         this.enabled = enabled;
     }
 
@@ -91,6 +95,9 @@ public class CoinChainConfig {
         updateTime = now;
         if (enabled == null) {
             enabled = Boolean.TRUE;
+        }
+        if (extraJson == null || extraJson.trim().isEmpty()) {
+            extraJson = "{}";
         }
     }
 

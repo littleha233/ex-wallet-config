@@ -1,14 +1,15 @@
 # 币种与币种扩展参数配置功能说明
 
-本文档用于单独说明本项目中新增的“币种配置 + 币种扩展参数配置”模块的实现逻辑与使用方式。
+本文档用于单独说明本项目中“币种配置 + 币种扩展参数配置”模块的实现逻辑与使用方式。
 
 ## 1. 功能概览
 
 已实现能力：
 - 配置币种基础信息：币种 ID（int，从 0 开始）、简写、全称、精度、图片、是否启用
 - 币种图片支持直接上传，后端返回可访问 URL 并自动回填
-- 按币种配置链路参数：链类型（ETH/BSC/SOL 等）、RPC、归集地址、提币地址、最小提币/充值数量、精度、启用状态
-- 扩展字段放在“币种扩展参数配置”列表中，支持行内展开维护 `key/value`（例如 `chainId=1`）
+- 按币种配置链路参数：链简称（ETH/BSC/SOL 等）、RPC、归集地址、提币地址、最小提币/充值数量、精度、启用状态
+- 扩展字段作为一个 JSON 整体保存在 `coin_chain_config.extra_json`（`VARCHAR(4000)`）
+- 页面支持两种编辑方式：直接编辑 JSON，或点击“展开KV”在二级弹窗按 `key/value` 维护
 - 币种配置、币种扩展参数配置拆分为两个独立页面
 
 页面入口：
@@ -17,12 +18,12 @@
 
 ## 2. 分层架构
 
-严格遵循当前项目的 Controller -> Biz -> Service -> Repository -> Domain 分层：
+严格遵循当前项目的 `Controller -> Biz -> Service -> Repository -> Domain` 分层：
 
 1. Controller 层
 - `src/main/java/com/example/springdemo/controller/CoinApiController.java`
 - `src/main/java/com/example/springdemo/controller/CoinChainConfigApiController.java`
-- `src/main/java/com/example/springdemo/controller/PageController.java`（页面路由）
+- `src/main/java/com/example/springdemo/controller/PageController.java`
 
 2. Biz 接口层
 - `src/main/java/com/example/springdemo/biz/CoinBiz.java`
@@ -37,12 +38,10 @@
 4. Repository 层
 - `src/main/java/com/example/springdemo/repository/CoinRepository.java`
 - `src/main/java/com/example/springdemo/repository/CoinChainConfigRepository.java`
-- `src/main/java/com/example/springdemo/repository/CoinChainConfigExtraRepository.java`
 
 5. Domain 层
 - `src/main/java/com/example/springdemo/domain/Coin.java`
 - `src/main/java/com/example/springdemo/domain/CoinChainConfig.java`
-- `src/main/java/com/example/springdemo/domain/CoinChainConfigExtra.java`
 
 6. 前端页面
 - 币种配置模板：`src/main/resources/templates/coin-config.html`
@@ -52,19 +51,22 @@
 
 ## 3. 数据库设计
 
-本模块新增 3 张表：
+当前模型只保留 2 张表：
 - `coin`
 - `coin_chain_config`
-- `coin_chain_config_extra`
+
+说明：
+- 原 `coin_chain_config_extra` 表已移除
+- 扩展字段统一存到 `coin_chain_config.extra_json`
 
 SQL 文件位置：
 - 统一建表文件（包含项目所有表）：`src/main/resources/sql/schema.sql`
-- 本模块迁移脚本：`src/main/resources/sql/migration/20260218_create_coin_config_tables.sql`
+- 本模块建表脚本：`src/main/resources/sql/migration/20260218_create_coin_config_tables.sql`
+- 旧数据迁移与删表脚本：`src/main/resources/sql/migration/20260218_merge_coin_chain_extra_into_json.sql`
 
 字段关系：
-- `coin_chain_config.coin_id` 关联币种主键
-- `coin_chain_config_extra.chain_config_id` 关联链配置主键
-- `coin_chain_config_extra` 对 `(chain_config_id, param_key)` 做唯一约束，保证同一链配置下 key 不重复
+- `coin_chain_config.coin_id` 关联 `coin.id`
+- `coin_chain_config` 对 `(coin_id, chain_code)` 做唯一约束，保证同币种下链简称唯一
 
 ## 4. API 说明
 
@@ -104,7 +106,7 @@ SQL 文件位置：
 
 ### 4.2 币种链扩展参数 API
 
-1. 查询链配置（支持按 coinId 过滤）
+1. 查询链配置（支持按 `coinId` 过滤）
 - `GET /api/coin-chain-configs?coinId=1`
 
 2. 新增链配置
@@ -115,13 +117,14 @@ SQL 文件位置：
 {
   "coinId": 1,
   "chainCode": "ETH",
-  "rpcUrl": "https://ethereum-rpc.publicnode.com",
+  "rpcUrl": "https://eth.llamarpc.com",
   "collectionAddress": "0x...",
   "withdrawAddress": "0x...",
   "minWithdrawAmount": 0.01,
   "withdrawPrecision": 6,
   "minDepositAmount": 0.001,
   "depositPrecision": 6,
+  "extraJson": "{\"chainId\":1,\"gas\":21000}",
   "enabled": true
 }
 ```
@@ -129,24 +132,9 @@ SQL 文件位置：
 3. 更新链配置
 - `PUT /api/coin-chain-configs/{id}`
 
-### 4.3 扩展字段（二级面板）API
-
-1. 查询扩展字段
-- `GET /api/coin-chain-configs/{id}/extras`
-
-2. 新增/更新扩展字段（按 key upsert）
-- `POST /api/coin-chain-configs/{id}/extras`
-
-请求体示例：
-```json
-{
-  "paramKey": "chainId",
-  "paramValue": "1"
-}
-```
-
-3. 删除扩展字段
-- `DELETE /api/coin-chain-configs/{id}/extras/{extraId}`
+说明：
+- 不再提供 `/extras` 子接口
+- `extraJson` 必须是 JSON 对象字符串
 
 ## 5. 页面使用方式
 
@@ -160,20 +148,21 @@ mvn spring-boot:run
 - `http://localhost:8080/coin-chain-config`（币种扩展参数配置）
 
 3. 操作流程：
-- 第一步在「币种配置」页面上传图标并保存币种
-- 第二步在「币种扩展参数配置」页面新增/编辑链参数
-- 第三步在扩展参数列表点击“展开字段”，行内维护 `key/value`
+- 第一步在“币种配置”页面上传图标并保存币种
+- 第二步在“币种扩展参数配置”页面新增/编辑链参数
+- 第三步在编辑弹窗中填写“扩展字段(JSON)”
+- 第四步可点击“展开KV”，在二级弹窗维护 `key/value`，确认后自动回填 JSON 文本
 
 ## 6. 参数校验说明
 
-后端已增加基础校验（非法参数返回 `400`）：
+后端基础校验（非法参数返回 `400`）：
 - ID 必须为正整数
-- `coinId` 必须为大于等于 0 的整数
+- `coinId` 必须为正整数且币种必须存在且启用
 - 币种精度、提币/充值精度必须为非负整数
 - 最小提币/充值数量必须大于等于 0
 - 必填字段不能为空
 - 同币种下 `chainCode` 不能重复
-- 同链配置下 `paramKey` 不能重复（重复时按 upsert 更新值）
+- `extraJson` 必须为合法 JSON 对象（不能是数组/字符串），并且长度不超过 4000
 
 ## 7. 图片上传配置
 

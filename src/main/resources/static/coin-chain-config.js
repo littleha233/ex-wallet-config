@@ -20,9 +20,20 @@ const withdrawPrecisionInput = document.getElementById('withdrawPrecisionInput')
 const minDepositAmountInput = document.getElementById('minDepositAmountInput');
 const depositPrecisionInput = document.getElementById('depositPrecisionInput');
 const formEnabledInput = document.getElementById('formEnabledInput');
+const extraJsonInput = document.getElementById('extraJsonInput');
+const openKvEditorBtn = document.getElementById('openKvEditorBtn');
+const formatJsonBtn = document.getElementById('formatJsonBtn');
 const saveConfigBtn = document.getElementById('saveConfigBtn');
 const resetFormBtn = document.getElementById('resetFormBtn');
 const modalMsg = document.getElementById('modalMsg');
+
+const kvModalMask = document.getElementById('kvModalMask');
+const kvModalTitle = document.getElementById('kvModalTitle');
+const closeKvModalBtn = document.getElementById('closeKvModalBtn');
+const addKvRowBtn = document.getElementById('addKvRowBtn');
+const applyKvBtn = document.getElementById('applyKvBtn');
+const kvRowsBody = document.getElementById('kvRowsBody');
+const kvMsg = document.getElementById('kvMsg');
 
 let coins = [];
 let coinMap = new Map();
@@ -30,8 +41,7 @@ let chainConfigs = [];
 let filteredChainConfigs = [];
 let currentEditId = null;
 let currentEditSnapshot = null;
-const expandedIds = new Set();
-const extrasCache = new Map();
+let kvContext = null; // { mode: 'form' } or { mode: 'row', configId }
 
 function showMsg(el, text) {
     el.textContent = text || '';
@@ -64,6 +74,82 @@ function coinLabel(coinPkId) {
         return `coin#${coinPkId}`;
     }
     return `${coin.symbol} (#${coin.coinId})`;
+}
+
+function parseJsonValueOrString(text) {
+    const valueText = String(text ?? '').trim();
+    if (!valueText) {
+        return '';
+    }
+    try {
+        return JSON.parse(valueText);
+    } catch (e) {
+        return String(text);
+    }
+}
+
+function parseExtraJsonText(rawText) {
+    const text = String(rawText ?? '').trim();
+    if (!text) {
+        return {};
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(text);
+    } catch (e) {
+        throw new Error('扩展字段 JSON 格式错误');
+    }
+
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+        throw new Error('扩展字段 JSON 必须是对象，例如 {"chainId":1}');
+    }
+
+    const normalized = {};
+    Object.entries(parsed).forEach(([key, value]) => {
+        const normalizedKey = String(key).trim();
+        if (!normalizedKey) {
+            throw new Error('扩展字段 key 不能为空');
+        }
+        normalized[normalizedKey] = value;
+    });
+    return normalized;
+}
+
+function objectToPrettyJsonText(objectValue) {
+    return JSON.stringify(objectValue, null, 2);
+}
+
+function objectToCompactJsonText(objectValue) {
+    return JSON.stringify(objectValue);
+}
+
+function parseConfigExtraJsonObject(config) {
+    const raw = String(config.extraJson ?? '').trim();
+    if (!raw) {
+        return {};
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+        throw new Error('extraJson is not object');
+    }
+    return parsed;
+}
+
+function configToUpdatePayload(config, extraJsonCompactText) {
+    return {
+        coinId: config.coinId,
+        chainCode: config.chainCode,
+        rpcUrl: config.rpcUrl,
+        collectionAddress: config.collectionAddress,
+        withdrawAddress: config.withdrawAddress,
+        minWithdrawAmount: config.minWithdrawAmount,
+        withdrawPrecision: config.withdrawPrecision,
+        minDepositAmount: config.minDepositAmount,
+        depositPrecision: config.depositPrecision,
+        extraJson: extraJsonCompactText,
+        enabled: config.enabled
+    };
 }
 
 function renderCoinSelects() {
@@ -133,164 +219,46 @@ function applyFilter() {
     renderTable();
 }
 
-function renderExtraRow(configId) {
-    const extras = extrasCache.get(configId);
-    if (extras === undefined) {
-        return `
-            <tr>
-                <td colspan="8">
-                    <div class="extra-wrap">扩展字段加载中...</div>
-                </td>
-            </tr>
-        `;
+function getJsonPreview(config) {
+    try {
+        const compact = objectToCompactJsonText(parseConfigExtraJsonObject(config));
+        if (compact === '{}') {
+            return '<code>{}</code>';
+        }
+        const text = compact.length > 80 ? `${compact.slice(0, 80)}...` : compact;
+        return `<code title="${escapeHtml(compact)}">${escapeHtml(text)}</code>`;
+    } catch (e) {
+        const raw = String(config.extraJson ?? '');
+        const text = raw.length > 80 ? `${raw.slice(0, 80)}...` : raw;
+        return `<code title="${escapeHtml(raw)}">${escapeHtml(text || '{}')}</code>`;
     }
-
-    const rows = extras.length
-        ? extras.map((extra) => `
-            <tr>
-                <td>${extra.id}</td>
-                <td>${escapeHtml(extra.paramKey)}</td>
-                <td>${escapeHtml(extra.paramValue)}</td>
-                <td>
-                    <button type="button" class="ghost" data-action="fill-extra" data-id="${configId}" data-key="${escapeHtml(extra.paramKey)}" data-value="${escapeHtml(extra.paramValue)}">填充</button>
-                    <button type="button" class="danger" data-action="delete-extra" data-id="${configId}" data-extra-id="${extra.id}">删除</button>
-                </td>
-            </tr>
-        `).join('')
-        : '<tr><td colspan="4">暂无扩展字段</td></tr>';
-
-    return `
-        <tr>
-            <td colspan="8">
-                <div class="extra-wrap">
-                    <div class="extra-head">
-                        <strong>扩展字段（key/value）</strong>
-                        <span style="color:#5f6b7a;font-size:12px;">chainConfigId=${configId}</span>
-                    </div>
-                    <div class="extra-grid">
-                        <input id="extraKey-${configId}" type="text" placeholder="key, 例如 chainId">
-                        <input id="extraValue-${configId}" type="text" placeholder="value, 例如 1">
-                        <button type="button" data-action="save-extra" data-id="${configId}">保存字段</button>
-                    </div>
-                    <table class="extra-table">
-                        <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Key</th>
-                            <th>Value</th>
-                            <th>操作</th>
-                        </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>
-            </td>
-        </tr>
-    `;
 }
 
 function renderTable() {
     chainTableBody.innerHTML = '';
     if (!filteredChainConfigs.length) {
-        chainTableBody.innerHTML = '<tr><td colspan="8">暂无数据</td></tr>';
+        chainTableBody.innerHTML = '<tr><td colspan="9">暂无数据</td></tr>';
         return;
     }
 
-    const fragments = [];
-    filteredChainConfigs.forEach((config) => {
-        const expanded = expandedIds.has(config.id);
-        fragments.push(`
-            <tr>
-                <td>${config.id}</td>
-                <td>${escapeHtml(coinLabel(config.coinId))}</td>
-                <td>${escapeHtml(config.chainCode)}</td>
-                <td>${escapeHtml(config.rpcUrl)}</td>
-                <td>${escapeHtml(config.minWithdrawAmount)} / ${config.withdrawPrecision}</td>
-                <td>${escapeHtml(config.minDepositAmount)} / ${config.depositPrecision}</td>
-                <td>${config.enabled ? '启用' : '禁用'}</td>
-                <td>
-                    <button type="button" data-action="edit" data-id="${config.id}">编辑</button>
-                    <button type="button" class="ghost" data-action="toggle-extra" data-id="${config.id}">${expanded ? '收起字段' : '展开字段'}</button>
-                </td>
-            </tr>
-        `);
-
-        if (expanded) {
-            fragments.push(renderExtraRow(config.id));
-        }
-    });
+    const fragments = filteredChainConfigs.map((config) => `
+        <tr>
+            <td>${config.id}</td>
+            <td>${escapeHtml(coinLabel(config.coinId))}</td>
+            <td>${escapeHtml(config.chainCode)}</td>
+            <td>${escapeHtml(config.rpcUrl)}</td>
+            <td>${escapeHtml(config.minWithdrawAmount)} / ${config.withdrawPrecision}</td>
+            <td>${escapeHtml(config.minDepositAmount)} / ${config.depositPrecision}</td>
+            <td>${getJsonPreview(config)}</td>
+            <td>${config.enabled ? '启用' : '禁用'}</td>
+            <td>
+                <button type="button" data-action="edit" data-id="${config.id}">编辑</button>
+                <button type="button" class="ghost" data-action="open-row-kv" data-id="${config.id}">展开KV</button>
+            </td>
+        </tr>
+    `);
 
     chainTableBody.innerHTML = fragments.join('');
-}
-
-async function loadExtras(configId) {
-    const response = await fetch(`/api/coin-chain-configs/${configId}/extras`);
-    if (!response.ok) {
-        throw new Error(await parseError(response, '加载扩展字段失败'));
-    }
-    const extras = await response.json();
-    extrasCache.set(configId, extras);
-}
-
-async function toggleExtra(configId) {
-    if (expandedIds.has(configId)) {
-        expandedIds.delete(configId);
-        renderTable();
-        return;
-    }
-
-    expandedIds.add(configId);
-    if (!extrasCache.has(configId)) {
-        renderTable();
-        try {
-            await loadExtras(configId);
-        } catch (error) {
-            showMsg(pageMsg, error.message || '加载扩展字段失败');
-        }
-    }
-    renderTable();
-}
-
-async function saveExtra(configId) {
-    const keyInput = document.getElementById(`extraKey-${configId}`);
-    const valueInput = document.getElementById(`extraValue-${configId}`);
-    if (!keyInput || !valueInput) {
-        return;
-    }
-
-    const paramKey = keyInput.value.trim();
-    const paramValue = valueInput.value.trim();
-    if (!paramKey || !paramValue) {
-        showMsg(pageMsg, '扩展字段 key/value 不能为空');
-        return;
-    }
-
-    const response = await fetch(`/api/coin-chain-configs/${configId}/extras`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paramKey, paramValue })
-    });
-    if (!response.ok) {
-        throw new Error(await parseError(response, '保存扩展字段失败'));
-    }
-
-    await loadExtras(configId);
-    keyInput.value = '';
-    valueInput.value = '';
-    showMsg(pageMsg, '扩展字段已保存');
-    renderTable();
-}
-
-async function deleteExtra(configId, extraId) {
-    const response = await fetch(`/api/coin-chain-configs/${configId}/extras/${extraId}`, {
-        method: 'DELETE'
-    });
-    if (!response.ok) {
-        throw new Error(await parseError(response, '删除扩展字段失败'));
-    }
-    await loadExtras(configId);
-    showMsg(pageMsg, '扩展字段已删除');
-    renderTable();
 }
 
 function clearForm() {
@@ -306,6 +274,12 @@ function clearForm() {
     minDepositAmountInput.value = '';
     depositPrecisionInput.value = '';
     formEnabledInput.value = 'true';
+    extraJsonInput.value = '{}';
+    showMsg(modalMsg, '');
+}
+
+function closeModal() {
+    chainModalMask.classList.remove('show');
     showMsg(modalMsg, '');
 }
 
@@ -318,7 +292,7 @@ function openCreateModal() {
     chainModalMask.classList.add('show');
 }
 
-function openEditModal(config) {
+async function openEditModal(config) {
     clearForm();
     currentEditId = config.id;
     currentEditSnapshot = { ...config };
@@ -335,12 +309,109 @@ function openEditModal(config) {
     depositPrecisionInput.value = config.depositPrecision;
     formEnabledInput.value = config.enabled ? 'true' : 'false';
 
+    try {
+        extraJsonInput.value = objectToPrettyJsonText(parseConfigExtraJsonObject(config));
+    } catch (e) {
+        extraJsonInput.value = String(config.extraJson ?? '{}');
+    }
+
     chainModalMask.classList.add('show');
 }
 
-function closeModal() {
-    chainModalMask.classList.remove('show');
-    showMsg(modalMsg, '');
+function renderKvRows(entries) {
+    if (!entries.length) {
+        kvRowsBody.innerHTML = `
+            <tr>
+                <td><input class="kv-key" type="text" placeholder="chainId"></td>
+                <td><input class="kv-value" type="text" placeholder="1 或 \"ETH\""></td>
+                <td><button type="button" class="danger" data-action="remove-kv-row">删除</button></td>
+            </tr>
+        `;
+        return;
+    }
+
+    const rows = entries.map(({ key, value }) => `
+        <tr>
+            <td><input class="kv-key" type="text" value="${escapeHtml(key)}" placeholder="chainId"></td>
+            <td><input class="kv-value" type="text" value="${escapeHtml(value)}" placeholder="1 或 \"ETH\""></td>
+            <td><button type="button" class="danger" data-action="remove-kv-row">删除</button></td>
+        </tr>
+    `);
+    kvRowsBody.innerHTML = rows.join('');
+}
+
+function kvObjectToRows(objectValue) {
+    return Object.entries(objectValue).map(([key, value]) => ({
+        key,
+        value: typeof value === 'string' ? value : JSON.stringify(value)
+    }));
+}
+
+function openKvModal(entries, context, title) {
+    kvContext = context;
+    kvModalTitle.textContent = title;
+    renderKvRows(entries);
+    showMsg(kvMsg, '');
+    kvModalMask.classList.add('show');
+}
+
+function closeKvModal() {
+    kvModalMask.classList.remove('show');
+    showMsg(kvMsg, '');
+}
+
+function collectKvObjectFromRows() {
+    const keys = [...kvRowsBody.querySelectorAll('.kv-key')];
+    const values = [...kvRowsBody.querySelectorAll('.kv-value')];
+    const objectValue = {};
+    const lowerKeys = new Set();
+
+    for (let i = 0; i < keys.length; i += 1) {
+        const keyText = keys[i].value.trim();
+        const valueText = values[i].value.trim();
+
+        if (!keyText && !valueText) {
+            continue;
+        }
+        if (!keyText) {
+            throw new Error('KV 编辑器中存在空 key');
+        }
+
+        const lower = keyText.toLowerCase();
+        if (lowerKeys.has(lower)) {
+            throw new Error(`KV 编辑器存在重复 key: ${keyText}`);
+        }
+        lowerKeys.add(lower);
+
+        objectValue[keyText] = parseJsonValueOrString(valueText);
+    }
+    return objectValue;
+}
+
+async function updateExtraJsonByRow(configId, objectValue) {
+    const target = chainConfigs.find((item) => item.id === configId);
+    if (!target) {
+        throw new Error('未找到要更新的扩展参数记录');
+    }
+
+    const compactJson = objectToCompactJsonText(objectValue);
+    const payload = configToUpdatePayload(target, compactJson);
+
+    const response = await fetch(`/api/coin-chain-configs/${configId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        throw new Error(await parseError(response, '保存扩展字段失败'));
+    }
+
+    const saved = await response.json();
+    const index = chainConfigs.findIndex((item) => item.id === configId);
+    if (index > -1) {
+        chainConfigs[index] = saved;
+    }
+    applyFilter();
 }
 
 async function saveConfig() {
@@ -358,6 +429,7 @@ async function saveConfig() {
         withdrawPrecision: Number(withdrawPrecisionInput.value),
         minDepositAmount,
         depositPrecision: Number(depositPrecisionInput.value),
+        extraJson: '{}',
         enabled: formEnabledInput.value === 'true'
     };
 
@@ -383,6 +455,13 @@ async function saveConfig() {
     }
     if (!Number.isInteger(payload.depositPrecision) || payload.depositPrecision < 0) {
         showMsg(modalMsg, '充值精度必须是非负整数');
+        return;
+    }
+
+    try {
+        payload.extraJson = objectToCompactJsonText(parseExtraJsonText(extraJsonInput.value));
+    } catch (error) {
+        showMsg(modalMsg, error.message || '扩展字段 JSON 无效');
         return;
     }
 
@@ -427,37 +506,27 @@ chainTableBody.addEventListener('click', async (event) => {
         if (action === 'edit') {
             const config = chainConfigs.find((item) => item.id === id);
             if (config) {
-                openEditModal(config);
+                await openEditModal(config);
             }
             return;
         }
 
-        if (action === 'toggle-extra') {
-            await toggleExtra(id);
-            return;
-        }
-
-        if (action === 'save-extra') {
-            await saveExtra(id);
-            return;
-        }
-
-        if (action === 'delete-extra') {
-            const extraId = Number(button.dataset.extraId);
-            if (!Number.isInteger(extraId) || extraId <= 0) {
-                return;
+        if (action === 'open-row-kv') {
+            const config = chainConfigs.find((item) => item.id === id);
+            if (!config) {
+                throw new Error('未找到扩展参数记录');
             }
-            await deleteExtra(id, extraId);
-            return;
-        }
-
-        if (action === 'fill-extra') {
-            const keyInput = document.getElementById(`extraKey-${id}`);
-            const valueInput = document.getElementById(`extraValue-${id}`);
-            if (keyInput && valueInput) {
-                keyInput.value = button.dataset.key || '';
-                valueInput.value = button.dataset.value || '';
+            let objectValue = {};
+            try {
+                objectValue = parseConfigExtraJsonObject(config);
+            } catch (e) {
+                objectValue = parseExtraJsonText(config.extraJson || '{}');
             }
+            openKvModal(
+                kvObjectToRows(objectValue),
+                { mode: 'row', configId: id },
+                `扩展字段 KV 编辑器（chainConfigId=${id}）`
+            );
         }
     } catch (error) {
         showMsg(pageMsg, error.message || '操作失败');
@@ -492,14 +561,92 @@ chainModalMask.addEventListener('click', (event) => {
         closeModal();
     }
 });
-saveConfigBtn.addEventListener('click', saveConfig);
 
-resetFormBtn.addEventListener('click', () => {
+openKvEditorBtn.addEventListener('click', () => {
+    try {
+        const objectValue = parseExtraJsonText(extraJsonInput.value);
+        openKvModal(kvObjectToRows(objectValue), { mode: 'form' }, '扩展字段 KV 编辑器');
+    } catch (error) {
+        showMsg(modalMsg, error.message || '扩展字段 JSON 无效');
+    }
+});
+
+formatJsonBtn.addEventListener('click', () => {
+    try {
+        const objectValue = parseExtraJsonText(extraJsonInput.value);
+        extraJsonInput.value = objectToPrettyJsonText(objectValue);
+        showMsg(modalMsg, 'JSON 校验通过');
+    } catch (error) {
+        showMsg(modalMsg, error.message || '扩展字段 JSON 无效');
+    }
+});
+
+saveConfigBtn.addEventListener('click', saveConfig);
+resetFormBtn.addEventListener('click', async () => {
     if (!currentEditSnapshot) {
         clearForm();
         return;
     }
-    openEditModal(currentEditSnapshot);
+    await openEditModal(currentEditSnapshot);
+});
+
+closeKvModalBtn.addEventListener('click', closeKvModal);
+kvModalMask.addEventListener('click', (event) => {
+    if (event.target === kvModalMask) {
+        closeKvModal();
+    }
+});
+
+addKvRowBtn.addEventListener('click', () => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><input class="kv-key" type="text" placeholder="chainId"></td>
+        <td><input class="kv-value" type="text" placeholder="1 或 \"ETH\""></td>
+        <td><button type="button" class="danger" data-action="remove-kv-row">删除</button></td>
+    `;
+    kvRowsBody.appendChild(row);
+});
+
+kvRowsBody.addEventListener('click', (event) => {
+    const button = event.target.closest('button');
+    if (!button) {
+        return;
+    }
+
+    if (button.dataset.action === 'remove-kv-row') {
+        const row = button.closest('tr');
+        if (row) {
+            row.remove();
+        }
+        if (!kvRowsBody.querySelector('tr')) {
+            addKvRowBtn.click();
+        }
+    }
+});
+
+applyKvBtn.addEventListener('click', async () => {
+    showMsg(kvMsg, '');
+    try {
+        const objectValue = collectKvObjectFromRows();
+
+        if (!kvContext) {
+            throw new Error('未找到 KV 上下文');
+        }
+
+        if (kvContext.mode === 'form') {
+            extraJsonInput.value = objectToPrettyJsonText(objectValue);
+            closeKvModal();
+            return;
+        }
+
+        if (kvContext.mode === 'row') {
+            await updateExtraJsonByRow(kvContext.configId, objectValue);
+            closeKvModal();
+            showMsg(pageMsg, '扩展字段已保存');
+        }
+    } catch (error) {
+        showMsg(kvMsg, error.message || 'KV 编辑失败');
+    }
 });
 
 (async function bootstrap() {

@@ -14,17 +14,14 @@ com/example/springdemo/biz/EthWalletBiz.class
 com/example/springdemo/controller/NoteApiController.class
 com/example/springdemo/controller/EthWithdrawalApiController$ErrorResponse.class
 com/example/springdemo/domain/Coin.class
-com/example/springdemo/repository/CoinChainConfigExtraRepository.class
 com/example/springdemo/controller/EthWalletApiController.class
 com/example/springdemo/service/exception/EthAddressLimitExceededException.class
 com/example/springdemo/biz/NoteBiz.class
 com/example/springdemo/controller/CoinApiController$UploadCoinIconResponse.class
-com/example/springdemo/controller/CoinChainConfigApiController$SaveCoinChainConfigExtraRequest.class
 com/example/springdemo/domain/EthWallet.class
 com/example/springdemo/service/NoteService.class
 com/example/springdemo/service/EthWithdrawalService$SignStageResult.class
 com/example/springdemo/repository/EthWalletRepository.class
-com/example/springdemo/domain/CoinChainConfigExtra.class
 com/example/springdemo/service/eth/EthereumChainService$FeeSuggestion.class
 com/example/springdemo/config/CoinIconProperties.class
 com/example/springdemo/service/CoinService.class

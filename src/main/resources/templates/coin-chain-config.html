@@ -14,7 +14,6 @@
             --primary: #0f6cbd;
             --primary-hover: #0a4f8f;
             --danger: #b42318;
-            --extra-bg: #f8fbff;
         }
 
         * { box-sizing: border-box; }
@@ -29,7 +28,7 @@
         }
 
         .page {
-            max-width: 1320px;
+            max-width: 1360px;
             margin: 22px auto;
             padding: 0 14px;
             display: grid;
@@ -72,13 +71,21 @@
             color: var(--muted);
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             border: 1px solid var(--line);
             border-radius: 8px;
             padding: 8px 10px;
             font-size: 14px;
             background: #fff;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
         }
 
         .btns {
@@ -118,10 +125,29 @@
 
         th { color: var(--muted); font-weight: 600; white-space: nowrap; }
 
+        code {
+            background: #f8fafc;
+            border: 1px solid #dbe4ef;
+            border-radius: 6px;
+            padding: 2px 6px;
+            display: inline-block;
+            max-width: 420px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .msg {
             min-height: 18px;
             color: #b42318;
             font-size: 13px;
+        }
+
+        .sub-msg {
+            min-height: 16px;
+            color: #b42318;
+            font-size: 12px;
+            margin-top: 6px;
         }
 
         .nav a {
@@ -129,41 +155,6 @@
             text-decoration: none;
             margin-right: 12px;
             font-weight: 600;
-        }
-
-        .extra-wrap {
-            padding: 10px;
-            border: 1px dashed #b8d0ea;
-            border-radius: 10px;
-            background: var(--extra-bg);
-            display: grid;
-            gap: 10px;
-        }
-
-        .extra-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .extra-grid {
-            display: grid;
-            grid-template-columns: 180px 1fr auto;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .extra-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-
-        .extra-table th, .extra-table td {
-            border-bottom: 1px solid #d5e4f5;
-            padding: 7px;
         }
 
         .modal-mask {
@@ -180,7 +171,9 @@
         .modal-mask.show { display: flex; }
 
         .modal {
-            width: min(920px, 100%);
+            width: min(980px, 100%);
+            max-height: 92vh;
+            overflow: auto;
             background: #fff;
             border-radius: 12px;
             border: 1px solid var(--line);
@@ -195,9 +188,22 @@
             gap: 10px;
         }
 
-        @media (max-width: 960px) {
+        .span-2 { grid-column: span 2; }
+
+        .kv-table th, .kv-table td {
+            border-bottom: 1px solid #dbe4ef;
+            padding: 7px;
+        }
+
+        .kv-table input {
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 980px) {
             .filters, .modal-grid { grid-template-columns: 1fr; }
-            .extra-grid { grid-template-columns: 1fr; }
+            .span-2 { grid-column: span 1; }
             table, thead, tbody, tr, th, td { display: block; }
             thead { display: none; }
             tr {
@@ -216,7 +222,7 @@
         <div class="title-row">
             <div>
                 <h1>币种扩展参数配置</h1>
-                <div class="hint">扩展字段已经放入扩展参数列表中，支持在列表里展开维护 key/value。</div>
+                <div class="hint">扩展字段支持 JSON 输入，也可通过“展开KV”打开二级弹窗按 key/value 维护。</div>
             </div>
             <div class="nav">
                 <a href="/coin-config">币种配置</a>
@@ -265,6 +271,7 @@
                 <th>RPC</th>
                 <th>最小提币/精度</th>
                 <th>最小充值/精度</th>
+                <th>扩展字段(JSON)</th>
                 <th>状态</th>
                 <th>操作</th>
             </tr>
@@ -277,7 +284,7 @@
 <div id="chainModalMask" class="modal-mask">
     <div class="modal">
         <div class="title-row">
-            <h2 id="chainModalTitle" style="margin:0;font-size:20px;">新增扩展参数</h2>
+            <h2 id="chainModalTitle" style="margin:0;font-size:20px;">编辑扩展参数</h2>
             <button id="closeModalBtn" type="button" class="ghost">关闭</button>
         </div>
 
@@ -290,7 +297,7 @@
                 <label for="chainCodeInput">链简称</label>
                 <input id="chainCodeInput" type="text" placeholder="ETH / BSC / SOL">
             </div>
-            <div class="field" style="grid-column: span 2;">
+            <div class="field span-2">
                 <label for="rpcUrlInput">RPC URL</label>
                 <input id="rpcUrlInput" type="text" placeholder="https://...">
             </div>
@@ -325,6 +332,15 @@
                     <option value="false">禁用</option>
                 </select>
             </div>
+            <div class="field span-2">
+                <label for="extraJsonInput">扩展字段(JSON)</label>
+                <textarea id="extraJsonInput" placeholder='{"chainId":1,"gas":21000}'></textarea>
+                <div class="btns">
+                    <button id="openKvEditorBtn" type="button">展开KV编辑</button>
+                    <button id="formatJsonBtn" type="button" class="ghost">校验/格式化JSON</button>
+                </div>
+                <div class="sub-msg">提示：扩展字段作为一个 JSON 整体保存到 coin_chain_config.extra_json。</div>
+            </div>
         </div>
 
         <div class="btns" style="margin-top:12px;">
@@ -332,6 +348,30 @@
             <button id="resetFormBtn" type="button" class="ghost">重置</button>
         </div>
         <div id="modalMsg" class="msg"></div>
+    </div>
+</div>
+
+<div id="kvModalMask" class="modal-mask" style="z-index:120;">
+    <div class="modal" style="width:min(760px,100%);">
+        <div class="title-row">
+            <h3 id="kvModalTitle" style="margin:0;font-size:20px;">扩展字段 KV 编辑器</h3>
+            <button id="closeKvModalBtn" type="button" class="ghost">关闭</button>
+        </div>
+        <div class="btns" style="margin-top:10px;">
+            <button id="addKvRowBtn" type="button">新增一行</button>
+            <button id="applyKvBtn" type="button" class="ghost">确认</button>
+        </div>
+        <table class="kv-table" style="margin-top:10px;">
+            <thead>
+            <tr>
+                <th style="width:34%;">Key</th>
+                <th>Value（支持 JSON 字面量）</th>
+                <th style="width:90px;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="kvRowsBody"></tbody>
+        </table>
+        <div id="kvMsg" class="msg"></div>
     </div>
 </div>
 

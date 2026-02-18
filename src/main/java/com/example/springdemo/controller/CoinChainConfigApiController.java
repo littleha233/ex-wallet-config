@@ -2,10 +2,8 @@ package com.example.springdemo.controller;
 
 import com.example.springdemo.biz.CoinChainConfigBiz;
 import com.example.springdemo.domain.CoinChainConfig;
-import com.example.springdemo.domain.CoinChainConfigExtra;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +43,7 @@ public class CoinChainConfigApiController {
             request.withdrawPrecision(),
             request.minDepositAmount(),
             request.depositPrecision(),
+            request.extraJson(),
             request.enabled()
         );
     }
@@ -62,24 +61,9 @@ public class CoinChainConfigApiController {
             request.withdrawPrecision(),
             request.minDepositAmount(),
             request.depositPrecision(),
+            request.extraJson(),
             request.enabled()
         );
-    }
-
-    @GetMapping("/{id}/extras")
-    public List<CoinChainConfigExtra> listExtras(@PathVariable Long id) {
-        return coinChainConfigBiz.listExtras(id);
-    }
-
-    @PostMapping("/{id}/extras")
-    public CoinChainConfigExtra upsertExtra(@PathVariable Long id, @RequestBody SaveCoinChainConfigExtraRequest request) {
-        return coinChainConfigBiz.upsertExtra(id, request.paramKey(), request.paramValue());
-    }
-
-    @DeleteMapping("/{id}/extras/{extraId}")
-    public ResponseEntity<Void> deleteExtra(@PathVariable Long id, @PathVariable Long extraId) {
-        coinChainConfigBiz.deleteExtra(id, extraId);
-        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -97,11 +81,9 @@ public class CoinChainConfigApiController {
         Integer withdrawPrecision,
         BigDecimal minDepositAmount,
         Integer depositPrecision,
+        String extraJson,
         Boolean enabled
     ) {
-    }
-
-    public record SaveCoinChainConfigExtraRequest(String paramKey, String paramValue) {
     }
 
     public record ErrorResponse(String message) {

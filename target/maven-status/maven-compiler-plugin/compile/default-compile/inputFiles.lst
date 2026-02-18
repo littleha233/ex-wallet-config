@@ -1,7 +1,6 @@
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/repository/EthWithdrawalRepository.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/config/EthWalletProperties.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/controller/PageController.java
-/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/domain/CoinChainConfigExtra.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/repository/NoteRepository.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/biz/CoinBiz.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/domain/Note.java
@@ -11,7 +10,6 @@
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/domain/CoinChainConfig.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/EthWithdrawalService.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/EthereumWalletService.java
-/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/repository/CoinChainConfigExtraRepository.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/controller/NoteApiController.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/repository/EthWalletRepository.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/domain/EthWithdrawal.java
