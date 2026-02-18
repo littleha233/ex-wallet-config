@@ -2,7 +2,11 @@ const coinIdInput = document.getElementById('coinIdInput');
 const coinSymbolInput = document.getElementById('coinSymbolInput');
 const coinFullNameInput = document.getElementById('coinFullNameInput');
 const coinPrecisionInput = document.getElementById('coinPrecisionInput');
+const coinIconFileInput = document.getElementById('coinIconFileInput');
+const uploadCoinIconBtn = document.getElementById('uploadCoinIconBtn');
 const coinIconUrlInput = document.getElementById('coinIconUrlInput');
+const coinIconPreviewBox = document.getElementById('coinIconPreviewBox');
+const coinIconPreviewImage = document.getElementById('coinIconPreviewImage');
 const coinEnabledInput = document.getElementById('coinEnabledInput');
 const saveCoinBtn = document.getElementById('saveCoinBtn');
 const resetCoinBtn = document.getElementById('resetCoinBtn');
@@ -73,7 +77,9 @@ function clearCoinForm() {
     coinSymbolInput.value = '';
     coinFullNameInput.value = '';
     coinPrecisionInput.value = '';
+    coinIconFileInput.value = '';
     coinIconUrlInput.value = '';
+    setCoinIconPreview('');
     coinEnabledInput.value = 'true';
 }
 
@@ -95,6 +101,16 @@ function clearExtraForm() {
     extraValueInput.value = '';
 }
 
+function setCoinIconPreview(url) {
+    if (!url) {
+        coinIconPreviewImage.removeAttribute('src');
+        coinIconPreviewBox.classList.add('hidden');
+        return;
+    }
+    coinIconPreviewImage.src = url;
+    coinIconPreviewBox.classList.remove('hidden');
+}
+
 async function loadCoins() {
     const response = await fetch('/api/coins');
     if (!response.ok) {
@@ -108,18 +124,22 @@ async function loadCoins() {
 function renderCoinTable() {
     coinTableBody.innerHTML = '';
     if (!coins || coins.length === 0) {
-        coinTableBody.innerHTML = '<tr><td colspan="7">No coin config yet.</td></tr>';
+        coinTableBody.innerHTML = '<tr><td colspan="8">No coin config yet.</td></tr>';
         return;
     }
 
     coins.forEach((coin) => {
         const tr = document.createElement('tr');
+        const iconCell = coin.iconUrl
+            ? `<img src="${coin.iconUrl}" alt="${coin.symbol} icon" style="width:24px;height:24px;border-radius:6px;border:1px solid #dbe4ef;object-fit:cover;">`
+            : '-';
         tr.innerHTML = `
             <td>${coin.id}</td>
             <td>${coin.coinId}</td>
             <td>${coin.symbol}</td>
             <td>${coin.fullName}</td>
             <td>${coin.coinPrecision}</td>
+            <td>${iconCell}</td>
             <td>${coin.enabled ? 'Y' : 'N'}</td>
             <td>
                 <button type="button" data-action="edit-coin" data-id="${coin.id}">Edit</button>
@@ -128,6 +148,37 @@ function renderCoinTable() {
         `;
         coinTableBody.appendChild(tr);
     });
+}
+
+async function uploadCoinIcon() {
+    const file = coinIconFileInput.files && coinIconFileInput.files[0];
+    if (!file) {
+        showMessage(coinMsg, 'Please choose an image file first.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    uploadCoinIconBtn.disabled = true;
+    showMessage(coinMsg, '');
+    try {
+        const response = await fetch('/api/coins/icon', {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error(await parseError(response, 'Failed to upload coin icon'));
+        }
+        const data = await response.json();
+        coinIconUrlInput.value = data.iconUrl || '';
+        setCoinIconPreview(coinIconUrlInput.value);
+        showMessage(coinMsg, 'Icon uploaded successfully.');
+    } catch (error) {
+        showMessage(coinMsg, error.message || 'Upload failed');
+    } finally {
+        uploadCoinIconBtn.disabled = false;
+    }
 }
 
 function renderCoinSelect() {
@@ -405,7 +456,9 @@ coinTableBody.addEventListener('click', (event) => {
         coinSymbolInput.value = coin.symbol;
         coinFullNameInput.value = coin.fullName;
         coinPrecisionInput.value = String(coin.coinPrecision);
+        coinIconFileInput.value = '';
         coinIconUrlInput.value = coin.iconUrl || '';
+        setCoinIconPreview(coin.iconUrl || '');
         coinEnabledInput.value = coin.enabled ? 'true' : 'false';
     } else if (action === 'select-coin') {
         selectedCoinInput.value = String(id);
@@ -471,6 +524,7 @@ extraTableBody.addEventListener('click', (event) => {
 });
 
 saveCoinBtn.addEventListener('click', saveCoin);
+uploadCoinIconBtn.addEventListener('click', uploadCoinIcon);
 resetCoinBtn.addEventListener('click', () => {
     clearCoinForm();
     showMessage(coinMsg, '');

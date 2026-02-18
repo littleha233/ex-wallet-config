@@ -143,6 +143,24 @@
             display: none;
         }
 
+        .preview-box {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--subtle);
+            font-size: 12px;
+        }
+
+        .preview-box img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            object-fit: cover;
+            background: #f8fafc;
+        }
+
         .section-title {
             display: flex;
             align-items: center;
@@ -201,8 +219,16 @@
                 <input id="coinPrecisionInput" type="number" min="0" placeholder="e.g. 6">
             </div>
             <div class="form-item">
-                <label for="coinIconUrlInput">Coin Icon URL</label>
-                <input id="coinIconUrlInput" type="text" placeholder="https://...">
+                <label for="coinIconFileInput">Coin Icon Upload</label>
+                <input id="coinIconFileInput" type="file" accept="image/*">
+                <div class="actions" style="margin-top: 0;">
+                    <button id="uploadCoinIconBtn" type="button">Upload Icon</button>
+                </div>
+                <input id="coinIconUrlInput" type="text" placeholder="Uploaded URL (auto filled)" readonly>
+                <div id="coinIconPreviewBox" class="preview-box hidden">
+                    <img id="coinIconPreviewImage" alt="coin icon preview">
+                    <span>Icon uploaded</span>
+                </div>
             </div>
             <div class="form-item">
                 <label for="coinEnabledInput">Enabled</label>
@@ -226,6 +252,7 @@
                 <th>Symbol</th>
                 <th>Full Name</th>
                 <th>Precision</th>
+                <th>Icon</th>
                 <th>Enabled</th>
                 <th>Action</th>
             </tr>

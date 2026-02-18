@@ -6,6 +6,7 @@
 
 已实现能力：
 - 配置币种基础信息：币种 ID、简写、全称、精度、图片、是否启用
+- 币种图片支持直接上传，后端返回可访问 URL 并自动回填
 - 按币种配置链路参数：链类型（ETH/BSC/SOL 等）、RPC、归集地址、提币地址、最小提币/充值数量、精度、启用状态
 - 在链配置下维护扩展字段（二级面板）：支持自定义 `key/value`（例如 `chainId=1`）
 - 前端页面完成新增、编辑、列表查询
@@ -25,10 +26,12 @@
 2. Biz 接口层
 - `src/main/java/com/example/springdemo/biz/CoinBiz.java`
 - `src/main/java/com/example/springdemo/biz/CoinChainConfigBiz.java`
+- `src/main/java/com/example/springdemo/biz/CoinIconBiz.java`
 
 3. Service 层（Biz 实现）
 - `src/main/java/com/example/springdemo/service/CoinService.java`
 - `src/main/java/com/example/springdemo/service/CoinChainConfigService.java`
+- `src/main/java/com/example/springdemo/service/CoinIconService.java`
 
 4. Repository 层
 - `src/main/java/com/example/springdemo/repository/CoinRepository.java`
@@ -67,7 +70,18 @@ SQL 文件位置：
 1. 查询币种列表
 - `GET /api/coins`
 
-2. 新增币种
+2. 上传币种图标
+- `POST /api/coins/icon`（`multipart/form-data`）
+- 表单字段：`file`
+
+响应示例：
+```json
+{
+  "iconUrl": "/uploads/coin-icons/coin-icon-1740000000000-8c3f....png"
+}
+```
+
+3. 新增币种
 - `POST /api/coins`
 
 请求体示例：
@@ -77,12 +91,12 @@ SQL 文件位置：
   "symbol": "USDT",
   "fullName": "Tether USD",
   "coinPrecision": 6,
-  "iconUrl": "https://example.com/usdt.png",
+  "iconUrl": "/uploads/coin-icons/coin-icon-1740000000000-8c3f....png",
   "enabled": true
 }
 ```
 
-3. 更新币种
+4. 更新币种
 - `PUT /api/coins/{id}`
 
 ### 4.2 币种链扩展参数 API
@@ -142,9 +156,10 @@ mvn spring-boot:run
 - `http://localhost:8080/coin-config`
 
 3. 操作流程：
-- 第一步在「Coin Config」保存币种
-- 第二步在「Chain Extension Config」选择币种并保存链参数
-- 第三步点击 `Expand Extra` 打开二级面板维护 `key/value`
+- 第一步在「Coin Config」先选择图片并点击 `Upload Icon`
+- 第二步保存币种（`Coin Icon URL` 会自动回填为上传后的地址）
+- 第三步在「Chain Extension Config」选择币种并保存链参数
+- 第四步点击 `Expand Extra` 打开二级面板维护 `key/value`
 
 ## 6. 参数校验说明
 
@@ -155,3 +170,20 @@ mvn spring-boot:run
 - 必填字段不能为空
 - 同币种下 `chainCode` 不能重复
 - 同链配置下 `paramKey` 不能重复（重复时按 upsert 更新值）
+
+## 7. 图片上传配置
+
+配置位置：`src/main/resources/application.yml`
+
+```yaml
+coin:
+  icon:
+    upload-dir: ${COIN_ICON_UPLOAD_DIR:./uploads/coin-icons}
+    public-path: ${COIN_ICON_PUBLIC_PATH:/uploads/coin-icons}
+    max-size-kb: ${COIN_ICON_MAX_SIZE_KB:512}
+```
+
+说明：
+- `upload-dir`：图片落盘目录
+- `public-path`：前端访问 URL 前缀
+- `max-size-kb`：单文件大小限制（KB）

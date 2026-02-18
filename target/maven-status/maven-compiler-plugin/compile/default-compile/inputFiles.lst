@@ -23,12 +23,16 @@
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/biz/CoinChainConfigBiz.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/eth/EthereumChainService.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/controller/EthWalletApiController.java
+/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/config/StaticResourceConfig.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/SpringDemoApplication.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/CoinService.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/CoinChainConfigService.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/biz/EthWalletBiz.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/controller/CoinChainConfigApiController.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/exception/EthAddressLimitExceededException.java
+/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/biz/CoinIconBiz.java
+/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/config/CoinIconProperties.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/NoteService.java
+/Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/service/CoinIconService.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/domain/Coin.java
 /Users/meng/IdeaProjects/spring-demo/src/main/java/com/example/springdemo/config/EthTxProperties.java

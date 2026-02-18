@@ -4,6 +4,7 @@ com/example/springdemo/controller/CoinChainConfigApiController$SaveCoinChainConf
 com/example/springdemo/service/EthWithdrawalService$BuildStageResult.class
 com/example/springdemo/service/eth/EthereumChainService.class
 com/example/springdemo/controller/EthWalletApiController$GenerateEthAddressRequest.class
+com/example/springdemo/config/StaticResourceConfig.class
 com/example/springdemo/controller/EthWalletApiController$ErrorResponse.class
 com/example/springdemo/controller/CoinChainConfigApiController$ErrorResponse.class
 com/example/springdemo/controller/CoinApiController.class
@@ -17,6 +18,7 @@ com/example/springdemo/repository/CoinChainConfigExtraRepository.class
 com/example/springdemo/controller/EthWalletApiController.class
 com/example/springdemo/service/exception/EthAddressLimitExceededException.class
 com/example/springdemo/biz/NoteBiz.class
+com/example/springdemo/controller/CoinApiController$UploadCoinIconResponse.class
 com/example/springdemo/controller/CoinChainConfigApiController$SaveCoinChainConfigExtraRequest.class
 com/example/springdemo/domain/EthWallet.class
 com/example/springdemo/service/NoteService.class
@@ -24,6 +26,7 @@ com/example/springdemo/service/EthWithdrawalService$SignStageResult.class
 com/example/springdemo/repository/EthWalletRepository.class
 com/example/springdemo/domain/CoinChainConfigExtra.class
 com/example/springdemo/service/eth/EthereumChainService$FeeSuggestion.class
+com/example/springdemo/config/CoinIconProperties.class
 com/example/springdemo/service/CoinService.class
 com/example/springdemo/service/CoinChainConfigService.class
 com/example/springdemo/domain/CoinChainConfig.class
@@ -32,6 +35,7 @@ com/example/springdemo/controller/EthWithdrawalApiController$StageActionRequest.
 com/example/springdemo/biz/CoinBiz.class
 com/example/springdemo/domain/EthWithdrawal.class
 com/example/springdemo/repository/EthWithdrawalRepository.class
+com/example/springdemo/biz/CoinIconBiz.class
 com/example/springdemo/controller/EthWithdrawalApiController$BuildWithdrawalRequest.class
 com/example/springdemo/controller/NoteApiController$CreateNoteRequest.class
 com/example/springdemo/service/EthWithdrawalService.class
@@ -46,3 +50,4 @@ com/example/springdemo/controller/CoinApiController$SaveCoinRequest.class
 com/example/springdemo/controller/CoinChainConfigApiController.class
 com/example/springdemo/config/EthTxProperties.class
 com/example/springdemo/service/exception/EthWithdrawalException.class
+com/example/springdemo/service/CoinIconService.class

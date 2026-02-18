@@ -15,6 +15,10 @@ spring:
         format_sql: true
   thymeleaf:
     cache: false
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 logging:
   level:
@@ -36,3 +40,9 @@ eth:
     estimate-gas-enabled: ${ETH_ESTIMATE_GAS_ENABLED:true}
     connect-timeout-ms: ${ETH_CONNECT_TIMEOUT_MS:5000}
     read-timeout-ms: ${ETH_READ_TIMEOUT_MS:10000}
+
+coin:
+  icon:
+    upload-dir: ${COIN_ICON_UPLOAD_DIR:./uploads/coin-icons}
+    public-path: ${COIN_ICON_PUBLIC_PATH:/uploads/coin-icons}
+    max-size-kb: ${COIN_ICON_MAX_SIZE_KB:512}
