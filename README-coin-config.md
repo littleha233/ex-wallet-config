@@ -8,11 +8,12 @@
 - 配置币种基础信息：币种 ID（int，从 0 开始）、简写、全称、精度、图片、是否启用
 - 币种图片支持直接上传，后端返回可访问 URL 并自动回填
 - 按币种配置链路参数：链类型（ETH/BSC/SOL 等）、RPC、归集地址、提币地址、最小提币/充值数量、精度、启用状态
-- 在链配置下维护扩展字段（二级面板）：支持自定义 `key/value`（例如 `chainId=1`）
-- 前端页面完成新增、编辑、列表查询
+- 扩展字段放在“币种扩展参数配置”列表中，支持行内展开维护 `key/value`（例如 `chainId=1`）
+- 币种配置、币种扩展参数配置拆分为两个独立页面
 
 页面入口：
-- `http://localhost:8080/coin-config`
+- 币种配置：`http://localhost:8080/coin-config`
+- 币种扩展参数配置：`http://localhost:8080/coin-chain-config`
 
 ## 2. 分层架构
 
@@ -44,8 +45,10 @@
 - `src/main/java/com/example/springdemo/domain/CoinChainConfigExtra.java`
 
 6. 前端页面
-- 模板：`src/main/resources/templates/coin-config.html`
-- 脚本：`src/main/resources/static/coin-config.js`
+- 币种配置模板：`src/main/resources/templates/coin-config.html`
+- 币种配置脚本：`src/main/resources/static/coin-config.js`
+- 币种扩展参数模板：`src/main/resources/templates/coin-chain-config.html`
+- 币种扩展参数脚本：`src/main/resources/static/coin-chain-config.js`
 
 ## 3. 数据库设计
 
@@ -153,13 +156,13 @@ mvn spring-boot:run
 ```
 
 2. 打开页面：
-- `http://localhost:8080/coin-config`
+- `http://localhost:8080/coin-config`（币种配置）
+- `http://localhost:8080/coin-chain-config`（币种扩展参数配置）
 
 3. 操作流程：
-- 第一步在「Coin Config」先选择图片并点击 `Upload Icon`
-- 第二步保存币种（`Coin Icon URL` 会自动回填为上传后的地址）
-- 第三步在「Chain Extension Config」选择币种并保存链参数
-- 第四步点击 `Expand Extra` 打开二级面板维护 `key/value`
+- 第一步在「币种配置」页面上传图标并保存币种
+- 第二步在「币种扩展参数配置」页面新增/编辑链参数
+- 第三步在扩展参数列表点击“展开字段”，行内维护 `key/value`
 
 ## 6. 参数校验说明
 

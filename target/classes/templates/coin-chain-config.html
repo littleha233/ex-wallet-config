@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>币种配置</title>
+    <title>币种扩展参数配置</title>
     <style>
         :root {
             --bg: #f3f6fb;
@@ -14,21 +14,22 @@
             --primary: #0f6cbd;
             --primary-hover: #0a4f8f;
             --danger: #b42318;
+            --extra-bg: #f8fbff;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            background: radial-gradient(circle at 12% 8%, #dbeafe 0%, transparent 36%),
-                        radial-gradient(circle at 90% 14%, #cffafe 0%, transparent 40%),
+            background: radial-gradient(circle at 10% 10%, #dbeafe 0%, transparent 35%),
+                        radial-gradient(circle at 85% 12%, #cffafe 0%, transparent 40%),
                         var(--bg);
             color: var(--ink);
             font-family: "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
         }
 
         .page {
-            max-width: 1200px;
+            max-width: 1320px;
             margin: 22px auto;
             padding: 0 14px;
             display: grid;
@@ -51,21 +52,14 @@
             gap: 10px;
         }
 
-        .title-row h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
+        h1 { margin: 0; font-size: 24px; }
         .hint { color: var(--muted); font-size: 13px; }
 
-        .toolbar, .filters {
+        .filters {
+            margin-top: 10px;
             display: grid;
             gap: 10px;
-        }
-
-        .filters {
             grid-template-columns: repeat(4, minmax(180px, 1fr));
-            margin-top: 10px;
         }
 
         .field {
@@ -118,7 +112,8 @@
             border-bottom: 1px solid var(--line);
             text-align: left;
             padding: 9px 8px;
-            vertical-align: middle;
+            vertical-align: top;
+            overflow-wrap: anywhere;
         }
 
         th { color: var(--muted); font-weight: 600; white-space: nowrap; }
@@ -136,12 +131,39 @@
             font-weight: 600;
         }
 
-        .icon-cell {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            border: 1px solid var(--line);
-            object-fit: cover;
+        .extra-wrap {
+            padding: 10px;
+            border: 1px dashed #b8d0ea;
+            border-radius: 10px;
+            background: var(--extra-bg);
+            display: grid;
+            gap: 10px;
+        }
+
+        .extra-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .extra-grid {
+            display: grid;
+            grid-template-columns: 180px 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .extra-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .extra-table th, .extra-table td {
+            border-bottom: 1px solid #d5e4f5;
+            padding: 7px;
         }
 
         .modal-mask {
@@ -158,7 +180,7 @@
         .modal-mask.show { display: flex; }
 
         .modal {
-            width: min(760px, 100%);
+            width: min(920px, 100%);
             background: #fff;
             border-radius: 12px;
             border: 1px solid var(--line);
@@ -173,33 +195,9 @@
             gap: 10px;
         }
 
-        .upload-line {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .preview {
-            margin-top: 8px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .preview.show { display: flex; }
-
-        .preview img {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            border: 1px solid var(--line);
-            object-fit: cover;
-        }
-
-        @media (max-width: 900px) {
+        @media (max-width: 960px) {
             .filters, .modal-grid { grid-template-columns: 1fr; }
+            .extra-grid { grid-template-columns: 1fr; }
             table, thead, tbody, tr, th, td { display: block; }
             thead { display: none; }
             tr {
@@ -217,25 +215,25 @@
     <section class="panel">
         <div class="title-row">
             <div>
-                <h1>币种配置</h1>
-                <div class="hint">独立管理币种基础信息，按列表查看与编辑。</div>
+                <h1>币种扩展参数配置</h1>
+                <div class="hint">扩展字段已经放入扩展参数列表中，支持在列表里展开维护 key/value。</div>
             </div>
             <div class="nav">
-                <a href="/coin-chain-config">币种扩展参数配置</a>
+                <a href="/coin-config">币种配置</a>
                 <a href="/">返回首页</a>
             </div>
         </div>
     </section>
 
-    <section class="panel toolbar">
+    <section class="panel">
         <div class="filters">
             <div class="field">
-                <label for="filterCoinId">币种 ID</label>
-                <input id="filterCoinId" type="number" min="0" step="1" placeholder="例如 0">
+                <label for="filterCoinSelect">币种</label>
+                <select id="filterCoinSelect"></select>
             </div>
             <div class="field">
-                <label for="filterSymbol">币种简称</label>
-                <input id="filterSymbol" type="text" placeholder="例如 USDT">
+                <label for="filterChainCode">链名称/链简称</label>
+                <input id="filterChainCode" type="text" placeholder="例如 ETH">
             </div>
             <div class="field">
                 <label for="filterEnabled">状态</label>
@@ -250,7 +248,7 @@
                 <div class="btns">
                     <button id="searchBtn" type="button">查询</button>
                     <button id="resetFilterBtn" type="button" class="ghost">重置</button>
-                    <button id="addCoinBtn" type="button">新增币种</button>
+                    <button id="addConfigBtn" type="button">新增扩展参数</button>
                 </div>
             </div>
         </div>
@@ -262,60 +260,67 @@
             <thead>
             <tr>
                 <th>ID</th>
-                <th>币种ID</th>
-                <th>简称</th>
-                <th>全称</th>
-                <th>精度</th>
-                <th>图标</th>
+                <th>币种</th>
+                <th>链</th>
+                <th>RPC</th>
+                <th>最小提币/精度</th>
+                <th>最小充值/精度</th>
                 <th>状态</th>
-                <th>更新时间</th>
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody id="coinTableBody"></tbody>
+            <tbody id="chainTableBody"></tbody>
         </table>
     </section>
 </main>
 
-<div id="coinModalMask" class="modal-mask">
+<div id="chainModalMask" class="modal-mask">
     <div class="modal">
         <div class="title-row">
-            <h2 id="coinModalTitle" style="margin:0;font-size:20px;">新增币种</h2>
+            <h2 id="chainModalTitle" style="margin:0;font-size:20px;">新增扩展参数</h2>
             <button id="closeModalBtn" type="button" class="ghost">关闭</button>
         </div>
 
         <div class="modal-grid">
             <div class="field">
-                <label for="coinIdInput">币种 ID</label>
-                <input id="coinIdInput" type="number" min="0" step="1" placeholder="从0开始">
+                <label for="formCoinSelect">币种</label>
+                <select id="formCoinSelect"></select>
             </div>
             <div class="field">
-                <label for="coinSymbolInput">币种简称</label>
-                <input id="coinSymbolInput" type="text" placeholder="USDT">
-            </div>
-            <div class="field">
-                <label for="coinFullNameInput">币种全称</label>
-                <input id="coinFullNameInput" type="text" placeholder="Tether USD">
-            </div>
-            <div class="field">
-                <label for="coinPrecisionInput">币种精度</label>
-                <input id="coinPrecisionInput" type="number" min="0" step="1" placeholder="6">
+                <label for="chainCodeInput">链简称</label>
+                <input id="chainCodeInput" type="text" placeholder="ETH / BSC / SOL">
             </div>
             <div class="field" style="grid-column: span 2;">
-                <label for="coinIconFileInput">币种图标上传</label>
-                <div class="upload-line">
-                    <input id="coinIconFileInput" type="file" accept="image/*">
-                    <button id="uploadCoinIconBtn" type="button">上传图标</button>
-                </div>
-                <input id="coinIconUrlInput" type="text" placeholder="上传后自动回填" readonly style="margin-top:8px;">
-                <div id="iconPreview" class="preview">
-                    <img id="iconPreviewImage" alt="icon preview">
-                    <span>已上传</span>
-                </div>
+                <label for="rpcUrlInput">RPC URL</label>
+                <input id="rpcUrlInput" type="text" placeholder="https://...">
             </div>
             <div class="field">
-                <label for="coinEnabledInput">状态</label>
-                <select id="coinEnabledInput">
+                <label for="collectionAddressInput">归集地址</label>
+                <input id="collectionAddressInput" type="text" placeholder="0x...">
+            </div>
+            <div class="field">
+                <label for="withdrawAddressInput">提币地址</label>
+                <input id="withdrawAddressInput" type="text" placeholder="0x...">
+            </div>
+            <div class="field">
+                <label for="minWithdrawAmountInput">最小提币数量</label>
+                <input id="minWithdrawAmountInput" type="number" min="0" step="0.000000000000000001" placeholder="0.01">
+            </div>
+            <div class="field">
+                <label for="withdrawPrecisionInput">提币精度</label>
+                <input id="withdrawPrecisionInput" type="number" min="0" step="1" placeholder="6">
+            </div>
+            <div class="field">
+                <label for="minDepositAmountInput">最小充值数量</label>
+                <input id="minDepositAmountInput" type="number" min="0" step="0.000000000000000001" placeholder="0.001">
+            </div>
+            <div class="field">
+                <label for="depositPrecisionInput">充值精度</label>
+                <input id="depositPrecisionInput" type="number" min="0" step="1" placeholder="6">
+            </div>
+            <div class="field">
+                <label for="formEnabledInput">状态</label>
+                <select id="formEnabledInput">
                     <option value="true">启用</option>
                     <option value="false">禁用</option>
                 </select>
@@ -323,13 +328,13 @@
         </div>
 
         <div class="btns" style="margin-top:12px;">
-            <button id="saveCoinBtn" type="button">保存</button>
+            <button id="saveConfigBtn" type="button">保存</button>
             <button id="resetFormBtn" type="button" class="ghost">重置</button>
         </div>
         <div id="modalMsg" class="msg"></div>
     </div>
 </div>
 
-<script src="/coin-config.js"></script>
+<script src="/coin-chain-config.js"></script>
 </body>
 </html>

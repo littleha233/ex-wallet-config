@@ -1,3 +1,15 @@
+const filterCoinId = document.getElementById('filterCoinId');
+const filterSymbol = document.getElementById('filterSymbol');
+const filterEnabled = document.getElementById('filterEnabled');
+const searchBtn = document.getElementById('searchBtn');
+const resetFilterBtn = document.getElementById('resetFilterBtn');
+const addCoinBtn = document.getElementById('addCoinBtn');
+const pageMsg = document.getElementById('pageMsg');
+const coinTableBody = document.getElementById('coinTableBody');
+
+const coinModalMask = document.getElementById('coinModalMask');
+const coinModalTitle = document.getElementById('coinModalTitle');
+const closeModalBtn = document.getElementById('closeModalBtn');
 const coinIdInput = document.getElementById('coinIdInput');
 const coinSymbolInput = document.getElementById('coinSymbolInput');
 const coinFullNameInput = document.getElementById('coinFullNameInput');
@@ -5,65 +17,47 @@ const coinPrecisionInput = document.getElementById('coinPrecisionInput');
 const coinIconFileInput = document.getElementById('coinIconFileInput');
 const uploadCoinIconBtn = document.getElementById('uploadCoinIconBtn');
 const coinIconUrlInput = document.getElementById('coinIconUrlInput');
-const coinIconPreviewBox = document.getElementById('coinIconPreviewBox');
-const coinIconPreviewImage = document.getElementById('coinIconPreviewImage');
+const iconPreview = document.getElementById('iconPreview');
+const iconPreviewImage = document.getElementById('iconPreviewImage');
 const coinEnabledInput = document.getElementById('coinEnabledInput');
 const saveCoinBtn = document.getElementById('saveCoinBtn');
-const resetCoinBtn = document.getElementById('resetCoinBtn');
-const coinMsg = document.getElementById('coinMsg');
-const coinTableBody = document.getElementById('coinTableBody');
-
-const selectedCoinInput = document.getElementById('selectedCoinInput');
-const chainCodeInput = document.getElementById('chainCodeInput');
-const rpcUrlInput = document.getElementById('rpcUrlInput');
-const collectionAddressInput = document.getElementById('collectionAddressInput');
-const withdrawAddressInput = document.getElementById('withdrawAddressInput');
-const minWithdrawAmountInput = document.getElementById('minWithdrawAmountInput');
-const withdrawPrecisionInput = document.getElementById('withdrawPrecisionInput');
-const minDepositAmountInput = document.getElementById('minDepositAmountInput');
-const depositPrecisionInput = document.getElementById('depositPrecisionInput');
-const chainEnabledInput = document.getElementById('chainEnabledInput');
-const saveChainConfigBtn = document.getElementById('saveChainConfigBtn');
-const resetChainConfigBtn = document.getElementById('resetChainConfigBtn');
-const refreshChainConfigBtn = document.getElementById('refreshChainConfigBtn');
-const chainMsg = document.getElementById('chainMsg');
-const chainTableBody = document.getElementById('chainTableBody');
-
-const extraPanel = document.getElementById('extraPanel');
-const extraPanelHint = document.getElementById('extraPanelHint');
-const extraKeyInput = document.getElementById('extraKeyInput');
-const extraValueInput = document.getElementById('extraValueInput');
-const saveExtraBtn = document.getElementById('saveExtraBtn');
-const resetExtraBtn = document.getElementById('resetExtraBtn');
-const extraMsg = document.getElementById('extraMsg');
-const extraTableBody = document.getElementById('extraTableBody');
+const resetFormBtn = document.getElementById('resetFormBtn');
+const modalMsg = document.getElementById('modalMsg');
 
 let coins = [];
-let chainConfigs = [];
-let currentEditCoinId = null;
-let currentEditChainConfigId = null;
-let currentExtraChainConfigId = null;
+let filteredCoins = [];
+let currentEditId = null;
 
-function showMessage(el, text) {
+function showMsg(el, text) {
     el.textContent = text || '';
+}
+
+function formatTime(value) {
+    if (!value) {
+        return '-';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function setIconPreview(url) {
+    if (!url) {
+        iconPreviewImage.removeAttribute('src');
+        iconPreview.classList.remove('show');
+        return;
+    }
+    iconPreviewImage.src = url;
+    iconPreview.classList.add('show');
 }
 
 async function parseError(response, fallback) {
     try {
         const body = await response.json();
-        if (body && typeof body.message === 'string' && body.message.trim()) {
+        if (body && body.message) {
             return body.message;
-        }
-        if (body && typeof body.detail === 'string' && body.detail.trim()) {
-            return body.detail;
-        }
-    } catch (e) {
-        // ignore
-    }
-    try {
-        const text = await response.text();
-        if (text && text.trim()) {
-            return text;
         }
     } catch (e) {
         // ignore
@@ -71,67 +65,47 @@ async function parseError(response, fallback) {
     return fallback;
 }
 
-function clearCoinForm() {
-    currentEditCoinId = null;
-    coinIdInput.value = '';
-    coinSymbolInput.value = '';
-    coinFullNameInput.value = '';
-    coinPrecisionInput.value = '';
-    coinIconFileInput.value = '';
-    coinIconUrlInput.value = '';
-    setCoinIconPreview('');
-    coinEnabledInput.value = 'true';
-}
-
-function clearChainForm() {
-    currentEditChainConfigId = null;
-    chainCodeInput.value = '';
-    rpcUrlInput.value = '';
-    collectionAddressInput.value = '';
-    withdrawAddressInput.value = '';
-    minWithdrawAmountInput.value = '';
-    withdrawPrecisionInput.value = '';
-    minDepositAmountInput.value = '';
-    depositPrecisionInput.value = '';
-    chainEnabledInput.value = 'true';
-}
-
-function clearExtraForm() {
-    extraKeyInput.value = '';
-    extraValueInput.value = '';
-}
-
-function setCoinIconPreview(url) {
-    if (!url) {
-        coinIconPreviewImage.removeAttribute('src');
-        coinIconPreviewBox.classList.add('hidden');
-        return;
-    }
-    coinIconPreviewImage.src = url;
-    coinIconPreviewBox.classList.remove('hidden');
-}
-
 async function loadCoins() {
     const response = await fetch('/api/coins');
     if (!response.ok) {
-        throw new Error(await parseError(response, 'Failed to load coins'));
+        throw new Error(await parseError(response, '加载币种失败'));
     }
     coins = await response.json();
-    renderCoinTable();
-    renderCoinSelect();
+    applyFilter();
 }
 
-function renderCoinTable() {
+function applyFilter() {
+    const coinIdKeyword = filterCoinId.value.trim();
+    const symbolKeyword = filterSymbol.value.trim().toUpperCase();
+    const enabledValue = filterEnabled.value;
+
+    filteredCoins = coins.filter((coin) => {
+        if (coinIdKeyword && String(coin.coinId) !== coinIdKeyword) {
+            return false;
+        }
+        if (symbolKeyword && !String(coin.symbol || '').toUpperCase().includes(symbolKeyword)) {
+            return false;
+        }
+        if (enabledValue !== 'all' && String(coin.enabled) !== enabledValue) {
+            return false;
+        }
+        return true;
+    });
+
+    renderTable();
+}
+
+function renderTable() {
     coinTableBody.innerHTML = '';
-    if (!coins || coins.length === 0) {
-        coinTableBody.innerHTML = '<tr><td colspan="8">No coin config yet.</td></tr>';
+    if (!filteredCoins.length) {
+        coinTableBody.innerHTML = '<tr><td colspan="9">暂无数据</td></tr>';
         return;
     }
 
-    coins.forEach((coin) => {
+    filteredCoins.forEach((coin) => {
         const tr = document.createElement('tr');
-        const iconCell = coin.iconUrl
-            ? `<img src="${coin.iconUrl}" alt="${coin.symbol} icon" style="width:24px;height:24px;border-radius:6px;border:1px solid #dbe4ef;object-fit:cover;">`
+        const iconHtml = coin.iconUrl
+            ? `<img src="${coin.iconUrl}" alt="${coin.symbol} icon" class="icon-cell">`
             : '-';
         tr.innerHTML = `
             <td>${coin.id}</td>
@@ -139,21 +113,59 @@ function renderCoinTable() {
             <td>${coin.symbol}</td>
             <td>${coin.fullName}</td>
             <td>${coin.coinPrecision}</td>
-            <td>${iconCell}</td>
-            <td>${coin.enabled ? 'Y' : 'N'}</td>
+            <td>${iconHtml}</td>
+            <td>${coin.enabled ? '启用' : '禁用'}</td>
+            <td>${formatTime(coin.updateTime || coin.createTime)}</td>
             <td>
-                <button type="button" data-action="edit-coin" data-id="${coin.id}">Edit</button>
-                <button type="button" class="ghost" data-action="select-coin" data-id="${coin.id}">Use In Chain Config</button>
+                <button type="button" data-action="edit" data-id="${coin.id}">编辑</button>
             </td>
         `;
         coinTableBody.appendChild(tr);
     });
 }
 
-async function uploadCoinIcon() {
+function clearForm() {
+    currentEditId = null;
+    coinIdInput.value = '';
+    coinSymbolInput.value = '';
+    coinFullNameInput.value = '';
+    coinPrecisionInput.value = '';
+    coinIconFileInput.value = '';
+    coinIconUrlInput.value = '';
+    coinEnabledInput.value = 'true';
+    setIconPreview('');
+    showMsg(modalMsg, '');
+}
+
+function openCreateModal() {
+    clearForm();
+    coinModalTitle.textContent = '新增币种';
+    coinModalMask.classList.add('show');
+}
+
+function openEditModal(coin) {
+    clearForm();
+    currentEditId = coin.id;
+    coinModalTitle.textContent = '编辑币种';
+    coinIdInput.value = String(coin.coinId);
+    coinSymbolInput.value = coin.symbol || '';
+    coinFullNameInput.value = coin.fullName || '';
+    coinPrecisionInput.value = String(coin.coinPrecision);
+    coinIconUrlInput.value = coin.iconUrl || '';
+    coinEnabledInput.value = coin.enabled ? 'true' : 'false';
+    setIconPreview(coin.iconUrl || '');
+    coinModalMask.classList.add('show');
+}
+
+function closeModal() {
+    coinModalMask.classList.remove('show');
+    showMsg(modalMsg, '');
+}
+
+async function uploadIcon() {
     const file = coinIconFileInput.files && coinIconFileInput.files[0];
     if (!file) {
-        showMessage(coinMsg, 'Please choose an image file first.');
+        showMsg(modalMsg, '请先选择图片文件');
         return;
     }
 
@@ -161,45 +173,22 @@ async function uploadCoinIcon() {
     formData.append('file', file);
 
     uploadCoinIconBtn.disabled = true;
-    showMessage(coinMsg, '');
+    showMsg(modalMsg, '');
     try {
         const response = await fetch('/api/coins/icon', {
             method: 'POST',
             body: formData
         });
         if (!response.ok) {
-            throw new Error(await parseError(response, 'Failed to upload coin icon'));
+            throw new Error(await parseError(response, '上传图标失败'));
         }
         const data = await response.json();
         coinIconUrlInput.value = data.iconUrl || '';
-        setCoinIconPreview(coinIconUrlInput.value);
-        showMessage(coinMsg, 'Icon uploaded successfully.');
+        setIconPreview(coinIconUrlInput.value);
     } catch (error) {
-        showMessage(coinMsg, error.message || 'Upload failed');
+        showMsg(modalMsg, error.message || '上传失败');
     } finally {
         uploadCoinIconBtn.disabled = false;
-    }
-}
-
-function renderCoinSelect() {
-    const previousValue = selectedCoinInput.value;
-    selectedCoinInput.innerHTML = '';
-    if (!coins || coins.length === 0) {
-        selectedCoinInput.innerHTML = '<option value="">No coin yet</option>';
-        return;
-    }
-
-    coins.forEach((coin) => {
-        const option = document.createElement('option');
-        option.value = String(coin.id);
-        option.textContent = `${coin.coinId} | ${coin.symbol} | ${coin.fullName}`;
-        selectedCoinInput.appendChild(option);
-    });
-
-    if (previousValue && coins.some((coin) => String(coin.id) === previousValue)) {
-        selectedCoinInput.value = previousValue;
-    } else {
-        selectedCoinInput.selectedIndex = 0;
     }
 }
 
@@ -215,226 +204,40 @@ async function saveCoin() {
         enabled: coinEnabledInput.value === 'true'
     };
 
-    if (!coinIdRaw || !Number.isInteger(coinId) || coinId < 0 || !payload.symbol || !payload.fullName || !Number.isInteger(payload.coinPrecision) || payload.coinPrecision < 0) {
-        showMessage(coinMsg, 'coinId must be >= 0, and symbol/fullName/coinPrecision are required.');
+    if (!coinIdRaw || !Number.isInteger(coinId) || coinId < 0) {
+        showMsg(modalMsg, 'coinId 必须是大于等于 0 的整数');
+        return;
+    }
+    if (!payload.symbol || !payload.fullName) {
+        showMsg(modalMsg, 'symbol 和 fullName 不能为空');
+        return;
+    }
+    if (!Number.isInteger(payload.coinPrecision) || payload.coinPrecision < 0) {
+        showMsg(modalMsg, 'coinPrecision 必须是非负整数');
         return;
     }
 
     saveCoinBtn.disabled = true;
-    showMessage(coinMsg, '');
+    showMsg(modalMsg, '');
     try {
-        const isUpdate = currentEditCoinId !== null;
-        const response = await fetch(isUpdate ? `/api/coins/${currentEditCoinId}` : '/api/coins', {
+        const isUpdate = currentEditId !== null;
+        const response = await fetch(isUpdate ? `/api/coins/${currentEditId}` : '/api/coins', {
             method: isUpdate ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
-            throw new Error(await parseError(response, 'Failed to save coin'));
+            throw new Error(await parseError(response, '保存币种失败'));
         }
+
+        closeModal();
         await loadCoins();
-        clearCoinForm();
-        showMessage(coinMsg, 'Coin saved successfully.');
+        showMsg(pageMsg, '保存成功');
     } catch (error) {
-        showMessage(coinMsg, error.message || 'Request failed');
+        showMsg(modalMsg, error.message || '请求失败');
     } finally {
         saveCoinBtn.disabled = false;
     }
-}
-
-async function loadChainConfigs() {
-    const coinId = Number(selectedCoinInput.value);
-    if (!Number.isInteger(coinId) || coinId <= 0) {
-        chainConfigs = [];
-        renderChainConfigTable();
-        return;
-    }
-    const response = await fetch(`/api/coin-chain-configs?coinId=${coinId}`);
-    if (!response.ok) {
-        throw new Error(await parseError(response, 'Failed to load chain configs'));
-    }
-    chainConfigs = await response.json();
-    renderChainConfigTable();
-}
-
-function renderChainConfigTable() {
-    chainTableBody.innerHTML = '';
-    if (!chainConfigs || chainConfigs.length === 0) {
-        chainTableBody.innerHTML = '<tr><td colspan="7">No chain config for selected coin.</td></tr>';
-        return;
-    }
-
-    chainConfigs.forEach((config) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${config.id}</td>
-            <td>${config.chainCode}</td>
-            <td>${config.rpcUrl}</td>
-            <td>${config.minWithdrawAmount} / ${config.withdrawPrecision}</td>
-            <td>${config.minDepositAmount} / ${config.depositPrecision}</td>
-            <td>${config.enabled ? 'Y' : 'N'}</td>
-            <td>
-                <button type="button" data-action="edit-chain" data-id="${config.id}">Edit</button>
-                <button type="button" class="ghost" data-action="open-extra" data-id="${config.id}" data-chain="${config.chainCode}">
-                    Expand Extra
-                </button>
-            </td>
-        `;
-        chainTableBody.appendChild(tr);
-    });
-}
-
-async function saveChainConfig() {
-    const coinId = Number(selectedCoinInput.value);
-    const minWithdrawAmount = minWithdrawAmountInput.value.trim();
-    const minDepositAmount = minDepositAmountInput.value.trim();
-    const minWithdrawAmountNum = Number(minWithdrawAmount);
-    const minDepositAmountNum = Number(minDepositAmount);
-    const payload = {
-        coinId,
-        chainCode: chainCodeInput.value.trim(),
-        rpcUrl: rpcUrlInput.value.trim(),
-        collectionAddress: collectionAddressInput.value.trim(),
-        withdrawAddress: withdrawAddressInput.value.trim(),
-        minWithdrawAmount,
-        withdrawPrecision: Number(withdrawPrecisionInput.value),
-        minDepositAmount,
-        depositPrecision: Number(depositPrecisionInput.value),
-        enabled: chainEnabledInput.value === 'true'
-    };
-
-    if (!Number.isInteger(coinId) || coinId <= 0) {
-        showMessage(chainMsg, 'Please select a valid coin first.');
-        return;
-    }
-    if (!payload.chainCode || !payload.rpcUrl || !payload.collectionAddress || !payload.withdrawAddress) {
-        showMessage(chainMsg, 'chainCode/rpcUrl/collectionAddress/withdrawAddress are required.');
-        return;
-    }
-    if (!payload.minWithdrawAmount || !Number.isFinite(minWithdrawAmountNum) || minWithdrawAmountNum < 0 || !Number.isInteger(payload.withdrawPrecision) || payload.withdrawPrecision < 0) {
-        showMessage(chainMsg, 'minWithdrawAmount must be >= 0 and withdrawPrecision must be >= 0.');
-        return;
-    }
-    if (!payload.minDepositAmount || !Number.isFinite(minDepositAmountNum) || minDepositAmountNum < 0 || !Number.isInteger(payload.depositPrecision) || payload.depositPrecision < 0) {
-        showMessage(chainMsg, 'minDepositAmount must be >= 0 and depositPrecision must be >= 0.');
-        return;
-    }
-
-    saveChainConfigBtn.disabled = true;
-    showMessage(chainMsg, '');
-    try {
-        const isUpdate = currentEditChainConfigId !== null;
-        const response = await fetch(isUpdate ? `/api/coin-chain-configs/${currentEditChainConfigId}` : '/api/coin-chain-configs', {
-            method: isUpdate ? 'PUT' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) {
-            throw new Error(await parseError(response, 'Failed to save chain config'));
-        }
-
-        await loadChainConfigs();
-        clearChainForm();
-        showMessage(chainMsg, 'Chain config saved successfully.');
-    } catch (error) {
-        showMessage(chainMsg, error.message || 'Request failed');
-    } finally {
-        saveChainConfigBtn.disabled = false;
-    }
-}
-
-async function openExtraPanel(chainConfigId, chainCode) {
-    currentExtraChainConfigId = chainConfigId;
-    extraPanel.classList.remove('hidden');
-    extraPanelHint.textContent = `Current chain config id=${chainConfigId}, chain=${chainCode}`;
-    clearExtraForm();
-    showMessage(extraMsg, '');
-    await loadExtras();
-}
-
-async function loadExtras() {
-    if (!currentExtraChainConfigId) {
-        extraTableBody.innerHTML = '<tr><td colspan="4">Select chain config first.</td></tr>';
-        return;
-    }
-    const response = await fetch(`/api/coin-chain-configs/${currentExtraChainConfigId}/extras`);
-    if (!response.ok) {
-        throw new Error(await parseError(response, 'Failed to load extras'));
-    }
-    const extras = await response.json();
-    renderExtraTable(extras);
-}
-
-function renderExtraTable(extras) {
-    extraTableBody.innerHTML = '';
-    if (!extras || extras.length === 0) {
-        extraTableBody.innerHTML = '<tr><td colspan="4">No key/value extra config yet.</td></tr>';
-        return;
-    }
-
-    extras.forEach((extra) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${extra.id}</td>
-            <td>${extra.paramKey}</td>
-            <td>${extra.paramValue}</td>
-            <td>
-                <button type="button" data-action="fill-extra" data-id="${extra.id}">Fill</button>
-                <button type="button" class="danger" data-action="delete-extra" data-id="${extra.id}">Delete</button>
-            </td>
-        `;
-        tr.dataset.extraKey = extra.paramKey;
-        tr.dataset.extraValue = extra.paramValue;
-        extraTableBody.appendChild(tr);
-    });
-}
-
-async function saveExtra() {
-    if (!currentExtraChainConfigId) {
-        showMessage(extraMsg, 'Please choose a chain config first.');
-        return;
-    }
-    const paramKey = extraKeyInput.value.trim();
-    const paramValue = extraValueInput.value.trim();
-    if (!paramKey || !paramValue) {
-        showMessage(extraMsg, 'paramKey and paramValue are required.');
-        return;
-    }
-
-    saveExtraBtn.disabled = true;
-    showMessage(extraMsg, '');
-    try {
-        const response = await fetch(`/api/coin-chain-configs/${currentExtraChainConfigId}/extras`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paramKey, paramValue })
-        });
-        if (!response.ok) {
-            throw new Error(await parseError(response, 'Failed to save extra param'));
-        }
-        await loadExtras();
-        clearExtraForm();
-        showMessage(extraMsg, 'Extra param saved successfully.');
-    } catch (error) {
-        showMessage(extraMsg, error.message || 'Request failed');
-    } finally {
-        saveExtraBtn.disabled = false;
-    }
-}
-
-async function deleteExtra(extraId) {
-    if (!currentExtraChainConfigId) {
-        showMessage(extraMsg, 'Please choose a chain config first.');
-        return;
-    }
-    const response = await fetch(`/api/coin-chain-configs/${currentExtraChainConfigId}/extras/${extraId}`, {
-        method: 'DELETE'
-    });
-    if (!response.ok) {
-        throw new Error(await parseError(response, 'Failed to delete extra param'));
-    }
-    await loadExtras();
-    showMessage(extraMsg, 'Extra param deleted.');
 }
 
 coinTableBody.addEventListener('click', (event) => {
@@ -444,124 +247,52 @@ coinTableBody.addEventListener('click', (event) => {
     }
     const action = button.dataset.action;
     const id = Number(button.dataset.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return;
-    }
-
-    if (action === 'edit-coin') {
+    if (action === 'edit' && Number.isInteger(id)) {
         const coin = coins.find((item) => item.id === id);
-        if (!coin) {
-            return;
+        if (coin) {
+            openEditModal(coin);
         }
-        currentEditCoinId = id;
-        coinIdInput.value = coin.coinId;
-        coinSymbolInput.value = coin.symbol;
-        coinFullNameInput.value = coin.fullName;
-        coinPrecisionInput.value = String(coin.coinPrecision);
-        coinIconFileInput.value = '';
-        coinIconUrlInput.value = coin.iconUrl || '';
-        setCoinIconPreview(coin.iconUrl || '');
-        coinEnabledInput.value = coin.enabled ? 'true' : 'false';
-    } else if (action === 'select-coin') {
-        selectedCoinInput.value = String(id);
-        showMessage(chainMsg, '');
-        loadChainConfigs().catch((error) => {
-            showMessage(chainMsg, error.message || 'Failed to load chain configs');
-        });
     }
 });
 
-chainTableBody.addEventListener('click', (event) => {
-    const button = event.target.closest('button');
-    if (!button) {
-        return;
-    }
-    const action = button.dataset.action;
-    const row = button.closest('tr');
-    const id = Number(button.dataset.id);
-    if (!Number.isInteger(id) || id <= 0 || !row) {
-        return;
-    }
-
-    if (action === 'edit-chain') {
-        currentEditChainConfigId = id;
-        const target = chainConfigs.find((item) => item.id === id);
-        if (!target) {
-            showMessage(chainMsg, 'Current chain config not found, please refresh list.');
-            return;
-        }
-        chainCodeInput.value = target.chainCode;
-        rpcUrlInput.value = target.rpcUrl;
-        collectionAddressInput.value = target.collectionAddress;
-        withdrawAddressInput.value = target.withdrawAddress;
-        minWithdrawAmountInput.value = target.minWithdrawAmount;
-        withdrawPrecisionInput.value = target.withdrawPrecision;
-        minDepositAmountInput.value = target.minDepositAmount;
-        depositPrecisionInput.value = target.depositPrecision;
-        chainEnabledInput.value = target.enabled ? 'true' : 'false';
-    } else if (action === 'open-extra') {
-        const chainCode = button.dataset.chain || '';
-        openExtraPanel(id, chainCode).catch((error) => {
-            showMessage(extraMsg, error.message || 'Failed to open extra panel');
-        });
-    }
+searchBtn.addEventListener('click', () => {
+    showMsg(pageMsg, '');
+    applyFilter();
 });
 
-extraTableBody.addEventListener('click', (event) => {
-    const button = event.target.closest('button');
-    if (!button) {
-        return;
-    }
-    const action = button.dataset.action;
-    const id = Number(button.dataset.id);
-    const row = button.closest('tr');
-    if (action === 'fill-extra' && row) {
-        extraKeyInput.value = row.dataset.extraKey || '';
-        extraValueInput.value = row.dataset.extraValue || '';
-    } else if (action === 'delete-extra' && Number.isInteger(id) && id > 0) {
-        deleteExtra(id).catch((error) => {
-            showMessage(extraMsg, error.message || 'Failed to delete');
-        });
-    }
+resetFilterBtn.addEventListener('click', () => {
+    filterCoinId.value = '';
+    filterSymbol.value = '';
+    filterEnabled.value = 'all';
+    showMsg(pageMsg, '');
+    applyFilter();
 });
 
+addCoinBtn.addEventListener('click', openCreateModal);
+closeModalBtn.addEventListener('click', closeModal);
+coinModalMask.addEventListener('click', (event) => {
+    if (event.target === coinModalMask) {
+        closeModal();
+    }
+});
+uploadCoinIconBtn.addEventListener('click', uploadIcon);
 saveCoinBtn.addEventListener('click', saveCoin);
-uploadCoinIconBtn.addEventListener('click', uploadCoinIcon);
-resetCoinBtn.addEventListener('click', () => {
-    clearCoinForm();
-    showMessage(coinMsg, '');
-});
-selectedCoinInput.addEventListener('change', () => {
-    showMessage(chainMsg, '');
-    clearChainForm();
-    loadChainConfigs().catch((error) => {
-        showMessage(chainMsg, error.message || 'Failed to load chain configs');
-    });
-});
-saveChainConfigBtn.addEventListener('click', saveChainConfig);
-resetChainConfigBtn.addEventListener('click', () => {
-    clearChainForm();
-    showMessage(chainMsg, '');
-});
-refreshChainConfigBtn.addEventListener('click', () => {
-    showMessage(chainMsg, '');
-    loadChainConfigs().catch((error) => {
-        showMessage(chainMsg, error.message || 'Failed to load chain configs');
-    });
-});
-saveExtraBtn.addEventListener('click', saveExtra);
-resetExtraBtn.addEventListener('click', () => {
-    clearExtraForm();
-    showMessage(extraMsg, '');
+resetFormBtn.addEventListener('click', () => {
+    const currentId = currentEditId;
+    if (currentId === null) {
+        clearForm();
+        return;
+    }
+    const coin = coins.find((item) => item.id === currentId);
+    if (coin) {
+        openEditModal(coin);
+    }
 });
 
-async function bootstrap() {
+(async function bootstrap() {
     try {
         await loadCoins();
-        await loadChainConfigs();
     } catch (error) {
-        showMessage(coinMsg, error.message || 'Initialization failed');
+        showMsg(pageMsg, error.message || '初始化失败');
     }
-}
-
-bootstrap();
+})();

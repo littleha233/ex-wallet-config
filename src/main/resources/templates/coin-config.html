@@ -1,37 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coin & Chain Config</title>
+    <title>币种配置</title>
     <style>
         :root {
-            --bg-a: #fff8e1;
-            --bg-b: #ecfeff;
+            --bg: #f3f6fb;
             --panel: #ffffff;
-            --ink: #0f172a;
-            --subtle: #64748b;
-            --line: #dbe4ef;
-            --primary: #0369a1;
-            --primary-hover: #0c4a6e;
-            --warn: #b91c1c;
+            --line: #d7e0ec;
+            --ink: #1f2a37;
+            --muted: #5f6b7a;
+            --primary: #0f6cbd;
+            --primary-hover: #0a4f8f;
+            --danger: #b42318;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
+            background: radial-gradient(circle at 12% 8%, #dbeafe 0%, transparent 36%),
+                        radial-gradient(circle at 90% 14%, #cffafe 0%, transparent 40%),
+                        var(--bg);
             color: var(--ink);
-            font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-            background: radial-gradient(circle at 12% 12%, #fde68a 0%, transparent 34%),
-                        radial-gradient(circle at 86% 18%, #a5f3fc 0%, transparent 38%),
-                        linear-gradient(120deg, var(--bg-a), var(--bg-b));
+            font-family: "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
         }
 
-        .layout {
-            max-width: 1250px;
-            margin: 30px auto;
-            padding: 0 16px;
+        .page {
+            max-width: 1200px;
+            margin: 22px auto;
+            padding: 0 14px;
             display: grid;
             gap: 14px;
         }
@@ -39,85 +38,75 @@
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+            padding: 14px;
         }
 
-        h1, h2 {
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .title-row h1 {
             margin: 0;
+            font-size: 24px;
         }
 
-        .desc {
-            margin-top: 8px;
-            color: var(--subtle);
-        }
+        .hint { color: var(--muted); font-size: 13px; }
 
-        .grid-2 {
-            margin-top: 12px;
+        .toolbar, .filters {
             display: grid;
-            grid-template-columns: repeat(2, minmax(240px, 1fr));
             gap: 10px;
         }
 
-        .grid-3 {
-            margin-top: 12px;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(220px, 1fr));
-            gap: 10px;
+        .filters {
+            grid-template-columns: repeat(4, minmax(180px, 1fr));
+            margin-top: 10px;
         }
 
-        .form-item {
+        .field {
             display: grid;
             gap: 6px;
         }
 
         label {
             font-size: 12px;
-            color: var(--subtle);
+            color: var(--muted);
         }
 
-        input, select, textarea {
+        input, select {
             width: 100%;
             border: 1px solid var(--line);
-            border-radius: 10px;
-            padding: 9px 12px;
+            border-radius: 8px;
+            padding: 8px 10px;
             font-size: 14px;
             background: #fff;
         }
 
-        textarea {
-            min-height: 86px;
-            resize: vertical;
-        }
-
-        .actions {
-            margin-top: 10px;
+        .btns {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         button {
             border: none;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 14px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
             color: #fff;
             background: var(--primary);
-            cursor: pointer;
+            font-size: 13px;
         }
 
         button:hover { background: var(--primary-hover); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .ghost { background: #0f172a; }
-        .danger { background: #b91c1c; }
-
-        .msg {
-            margin-top: 8px;
-            color: var(--warn);
-            min-height: 20px;
-        }
+        .ghost { background: #475467; }
+        .danger { background: var(--danger); }
 
         table {
             width: 100%;
@@ -128,56 +117,89 @@
         th, td {
             border-bottom: 1px solid var(--line);
             text-align: left;
-            padding: 8px;
-            vertical-align: top;
-            overflow-wrap: anywhere;
+            padding: 9px 8px;
+            vertical-align: middle;
         }
 
-        th {
-            color: var(--subtle);
+        th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+
+        .msg {
+            min-height: 18px;
+            color: #b42318;
+            font-size: 13px;
+        }
+
+        .nav a {
+            color: var(--primary);
+            text-decoration: none;
+            margin-right: 12px;
             font-weight: 600;
-            white-space: nowrap;
         }
 
-        .hidden {
+        .icon-cell {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            object-fit: cover;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.45);
             display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            z-index: 99;
         }
 
-        .preview-box {
-            margin-top: 8px;
+        .modal-mask.show { display: flex; }
+
+        .modal {
+            width: min(760px, 100%);
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            padding: 16px;
+            box-shadow: 0 20px 50px rgba(2, 6, 23, 0.25);
+        }
+
+        .modal-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .upload-line {
             display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .preview {
+            margin-top: 8px;
+            display: none;
             align-items: center;
             gap: 10px;
-            color: var(--subtle);
+            color: var(--muted);
             font-size: 12px;
         }
 
-        .preview-box img {
-            width: 32px;
-            height: 32px;
+        .preview.show { display: flex; }
+
+        .preview img {
+            width: 34px;
+            height: 34px;
             border-radius: 8px;
             border: 1px solid var(--line);
             object-fit: cover;
-            background: #f8fafc;
         }
 
-        .section-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        a {
-            color: #0f172a;
-            text-decoration: none;
-            font-weight: 600;
-            margin-right: 14px;
-        }
-
-        @media (max-width: 980px) {
-            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        @media (max-width: 900px) {
+            .filters, .modal-grid { grid-template-columns: 1fr; }
             table, thead, tbody, tr, th, td { display: block; }
             thead { display: none; }
             tr {
@@ -186,197 +208,128 @@
                 margin-bottom: 10px;
                 padding: 8px;
             }
-            td { border: none; padding: 6px 0; }
+            td { border: none; padding: 5px 0; }
         }
     </style>
 </head>
 <body>
-<main class="layout">
+<main class="page">
     <section class="panel">
-        <h1>Coin Config Center</h1>
-        <div class="desc">Configure base coin data and chain-level extension params with custom key/value details.</div>
+        <div class="title-row">
+            <div>
+                <h1>币种配置</h1>
+                <div class="hint">独立管理币种基础信息，按列表查看与编辑。</div>
+            </div>
+            <div class="nav">
+                <a href="/coin-chain-config">币种扩展参数配置</a>
+                <a href="/">返回首页</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel toolbar">
+        <div class="filters">
+            <div class="field">
+                <label for="filterCoinId">币种 ID</label>
+                <input id="filterCoinId" type="number" min="0" step="1" placeholder="例如 0">
+            </div>
+            <div class="field">
+                <label for="filterSymbol">币种简称</label>
+                <input id="filterSymbol" type="text" placeholder="例如 USDT">
+            </div>
+            <div class="field">
+                <label for="filterEnabled">状态</label>
+                <select id="filterEnabled">
+                    <option value="all">全部</option>
+                    <option value="true">启用</option>
+                    <option value="false">禁用</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>操作</label>
+                <div class="btns">
+                    <button id="searchBtn" type="button">查询</button>
+                    <button id="resetFilterBtn" type="button" class="ghost">重置</button>
+                    <button id="addCoinBtn" type="button">新增币种</button>
+                </div>
+            </div>
+        </div>
+        <div id="pageMsg" class="msg"></div>
     </section>
 
     <section class="panel">
-        <div class="section-title">
-            <h2>1) Coin Config</h2>
-        </div>
-        <div class="grid-3">
-            <div class="form-item">
-                <label for="coinIdInput">Coin ID</label>
-                <input id="coinIdInput" type="number" min="0" step="1" placeholder="e.g. 0">
-            </div>
-            <div class="form-item">
-                <label for="coinSymbolInput">Coin Symbol</label>
-                <input id="coinSymbolInput" type="text" placeholder="e.g. USDT">
-            </div>
-            <div class="form-item">
-                <label for="coinFullNameInput">Coin Full Name</label>
-                <input id="coinFullNameInput" type="text" placeholder="e.g. Tether USD">
-            </div>
-            <div class="form-item">
-                <label for="coinPrecisionInput">Coin Precision</label>
-                <input id="coinPrecisionInput" type="number" min="0" placeholder="e.g. 6">
-            </div>
-            <div class="form-item">
-                <label for="coinIconFileInput">Coin Icon Upload</label>
-                <input id="coinIconFileInput" type="file" accept="image/*">
-                <div class="actions" style="margin-top: 0;">
-                    <button id="uploadCoinIconBtn" type="button">Upload Icon</button>
-                </div>
-                <input id="coinIconUrlInput" type="text" placeholder="Uploaded URL (auto filled)" readonly>
-                <div id="coinIconPreviewBox" class="preview-box hidden">
-                    <img id="coinIconPreviewImage" alt="coin icon preview">
-                    <span>Icon uploaded</span>
-                </div>
-            </div>
-            <div class="form-item">
-                <label for="coinEnabledInput">Enabled</label>
-                <select id="coinEnabledInput">
-                    <option value="true">Enabled</option>
-                    <option value="false">Disabled</option>
-                </select>
-            </div>
-        </div>
-        <div class="actions">
-            <button id="saveCoinBtn" type="button">Save Coin</button>
-            <button id="resetCoinBtn" type="button" class="ghost">Reset</button>
-        </div>
-        <div id="coinMsg" class="msg"></div>
-
         <table>
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Coin ID</th>
-                <th>Symbol</th>
-                <th>Full Name</th>
-                <th>Precision</th>
-                <th>Icon</th>
-                <th>Enabled</th>
-                <th>Action</th>
+                <th>币种ID</th>
+                <th>简称</th>
+                <th>全称</th>
+                <th>精度</th>
+                <th>图标</th>
+                <th>状态</th>
+                <th>更新时间</th>
+                <th>操作</th>
             </tr>
             </thead>
             <tbody id="coinTableBody"></tbody>
         </table>
     </section>
+</main>
 
-    <section class="panel">
-        <div class="section-title">
-            <h2>2) Chain Extension Config</h2>
-            <div style="color: var(--subtle); font-size: 13px;">Choose coin first, then configure ETH/BSC/SOL chain params.</div>
-        </div>
-        <div class="grid-2">
-            <div class="form-item">
-                <label for="selectedCoinInput">Selected Coin</label>
-                <select id="selectedCoinInput"></select>
-            </div>
+<div id="coinModalMask" class="modal-mask">
+    <div class="modal">
+        <div class="title-row">
+            <h2 id="coinModalTitle" style="margin:0;font-size:20px;">新增币种</h2>
+            <button id="closeModalBtn" type="button" class="ghost">关闭</button>
         </div>
 
-        <div class="grid-3">
-            <div class="form-item">
-                <label for="chainCodeInput">Chain Code</label>
-                <input id="chainCodeInput" type="text" placeholder="ETH / BSC / SOL">
+        <div class="modal-grid">
+            <div class="field">
+                <label for="coinIdInput">币种 ID</label>
+                <input id="coinIdInput" type="number" min="0" step="1" placeholder="从0开始">
             </div>
-            <div class="form-item">
-                <label for="rpcUrlInput">RPC URL</label>
-                <input id="rpcUrlInput" type="text" placeholder="https://...">
+            <div class="field">
+                <label for="coinSymbolInput">币种简称</label>
+                <input id="coinSymbolInput" type="text" placeholder="USDT">
             </div>
-            <div class="form-item">
-                <label for="collectionAddressInput">Collection Address</label>
-                <input id="collectionAddressInput" type="text" placeholder="0x... / Sol address ...">
+            <div class="field">
+                <label for="coinFullNameInput">币种全称</label>
+                <input id="coinFullNameInput" type="text" placeholder="Tether USD">
             </div>
-            <div class="form-item">
-                <label for="withdrawAddressInput">Withdraw Address</label>
-                <input id="withdrawAddressInput" type="text" placeholder="0x... / Sol address ...">
+            <div class="field">
+                <label for="coinPrecisionInput">币种精度</label>
+                <input id="coinPrecisionInput" type="number" min="0" step="1" placeholder="6">
             </div>
-            <div class="form-item">
-                <label for="minWithdrawAmountInput">Min Withdraw Amount</label>
-                <input id="minWithdrawAmountInput" type="number" min="0" step="0.000000000000000001" placeholder="0.01">
+            <div class="field" style="grid-column: span 2;">
+                <label for="coinIconFileInput">币种图标上传</label>
+                <div class="upload-line">
+                    <input id="coinIconFileInput" type="file" accept="image/*">
+                    <button id="uploadCoinIconBtn" type="button">上传图标</button>
+                </div>
+                <input id="coinIconUrlInput" type="text" placeholder="上传后自动回填" readonly style="margin-top:8px;">
+                <div id="iconPreview" class="preview">
+                    <img id="iconPreviewImage" alt="icon preview">
+                    <span>已上传</span>
+                </div>
             </div>
-            <div class="form-item">
-                <label for="withdrawPrecisionInput">Withdraw Precision</label>
-                <input id="withdrawPrecisionInput" type="number" min="0" placeholder="e.g. 6">
-            </div>
-            <div class="form-item">
-                <label for="minDepositAmountInput">Min Deposit Amount</label>
-                <input id="minDepositAmountInput" type="number" min="0" step="0.000000000000000001" placeholder="0.01">
-            </div>
-            <div class="form-item">
-                <label for="depositPrecisionInput">Deposit Precision</label>
-                <input id="depositPrecisionInput" type="number" min="0" placeholder="e.g. 6">
-            </div>
-            <div class="form-item">
-                <label for="chainEnabledInput">Enabled</label>
-                <select id="chainEnabledInput">
-                    <option value="true">Enabled</option>
-                    <option value="false">Disabled</option>
+            <div class="field">
+                <label for="coinEnabledInput">状态</label>
+                <select id="coinEnabledInput">
+                    <option value="true">启用</option>
+                    <option value="false">禁用</option>
                 </select>
             </div>
         </div>
-        <div class="actions">
-            <button id="saveChainConfigBtn" type="button">Save Chain Config</button>
-            <button id="resetChainConfigBtn" type="button" class="ghost">Reset</button>
-            <button id="refreshChainConfigBtn" type="button" class="ghost">Refresh List</button>
-        </div>
-        <div id="chainMsg" class="msg"></div>
 
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Chain</th>
-                <th>RPC</th>
-                <th>Withdraw Min / Precision</th>
-                <th>Deposit Min / Precision</th>
-                <th>Enabled</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody id="chainTableBody"></tbody>
-        </table>
-    </section>
-
-    <section id="extraPanel" class="panel hidden">
-        <div class="section-title">
-            <h2>3) Extra Field Key/Value (Secondary Panel)</h2>
-            <div id="extraPanelHint" style="color: var(--subtle); font-size: 13px;"></div>
+        <div class="btns" style="margin-top:12px;">
+            <button id="saveCoinBtn" type="button">保存</button>
+            <button id="resetFormBtn" type="button" class="ghost">重置</button>
         </div>
-        <div class="grid-2">
-            <div class="form-item">
-                <label for="extraKeyInput">Key</label>
-                <input id="extraKeyInput" type="text" placeholder="e.g. chainId">
-            </div>
-            <div class="form-item">
-                <label for="extraValueInput">Value</label>
-                <textarea id="extraValueInput" placeholder="e.g. 1"></textarea>
-            </div>
-        </div>
-        <div class="actions">
-            <button id="saveExtraBtn" type="button">Save Extra</button>
-            <button id="resetExtraBtn" type="button" class="ghost">Reset</button>
-        </div>
-        <div id="extraMsg" class="msg"></div>
+        <div id="modalMsg" class="msg"></div>
+    </div>
+</div>
 
-        <table>
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Key</th>
-                <th>Value</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody id="extraTableBody"></tbody>
-        </table>
-    </section>
-
-    <section class="panel">
-        <a href="/eth-address">Ethereum Address</a>
-        <a href="/eth-withdraw">Ethereum Withdraw</a>
-        <a href="/">Back to Notes</a>
-    </section>
-</main>
 <script src="/coin-config.js"></script>
 </body>
 </html>

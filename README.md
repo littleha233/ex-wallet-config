@@ -5,7 +5,7 @@
 - REST API
 - 服务层 + 持久层
 - 数据库（默认 MySQL + JPA）
-- 币种与链扩展参数配置页面（`/coin-config`）
+- 币种配置页（`/coin-config`）与币种扩展参数页（`/coin-chain-config`）
 
 ## 启动方式
 
@@ -17,6 +17,7 @@ mvn spring-boot:run
 启动后访问：
 - 首页：`http://localhost:8080/`
 - 币种配置页：`http://localhost:8080/coin-config`
+- 币种扩展参数页：`http://localhost:8080/coin-chain-config`
 
 默认连接本机 MySQL（`springdemo` 数据库）。
 
