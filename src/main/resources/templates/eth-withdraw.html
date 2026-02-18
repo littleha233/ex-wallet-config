@@ -170,10 +170,16 @@
                 <label for="amountEth">Amount (ETH)</label>
                 <input id="amountEth" type="number" min="0" step="0.000000000000000001" placeholder="0.01">
             </div>
+            <div class="form-item">
+                <label for="withdrawalId">Withdrawal ID (for Sign/Broadcast)</label>
+                <input id="withdrawalId" type="number" min="1" placeholder="Auto-filled after build">
+            </div>
         </div>
         <div class="actions">
             <button id="loadAddressBtn" type="button" class="ghost">Load Address List</button>
-            <button id="sendBtn" type="button">Sign & Broadcast</button>
+            <button id="buildBtn" type="button">Build</button>
+            <button id="signBtn" type="button">Sign</button>
+            <button id="broadcastBtn" type="button">Broadcast</button>
             <button id="refreshHistoryBtn" type="button" class="ghost">Refresh History</button>
         </div>
         <div id="message" class="msg"></div>

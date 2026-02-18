@@ -1,10 +1,11 @@
-com/example/springdemo/controller/EthWithdrawalApiController$SendWithdrawalRequest.class
 com/example/springdemo/service/EthWithdrawalService$BuildStageResult.class
 com/example/springdemo/service/eth/EthereumChainService.class
 com/example/springdemo/controller/EthWalletApiController$GenerateEthAddressRequest.class
+com/example/springdemo/controller/EthWithdrawalApiController$StageActionRequest.class
 com/example/springdemo/controller/EthWalletApiController$ErrorResponse.class
 com/example/springdemo/domain/EthWithdrawal.class
 com/example/springdemo/repository/EthWithdrawalRepository.class
+com/example/springdemo/controller/EthWithdrawalApiController$BuildWithdrawalRequest.class
 com/example/springdemo/controller/NoteApiController$CreateNoteRequest.class
 com/example/springdemo/service/EthWithdrawalService.class
 com/example/springdemo/domain/Note.class

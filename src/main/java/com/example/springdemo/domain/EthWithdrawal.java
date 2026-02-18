@@ -45,6 +45,9 @@ public class EthWithdrawal {
     @Column(name = "max_fee_per_gas", nullable = false, length = 78)
     private String maxFeePerGas;
 
+    @Column(name = "signed_raw_tx", columnDefinition = "TEXT")
+    private String signedRawTx;
+
     @Column(name = "tx_hash", length = 66)
     private String txHash;
 

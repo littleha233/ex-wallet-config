@@ -2,8 +2,11 @@ const uidInput = document.getElementById('uid');
 const fromWalletSelect = document.getElementById('fromWalletId');
 const toAddressInput = document.getElementById('toAddress');
 const amountEthInput = document.getElementById('amountEth');
+const withdrawalIdInput = document.getElementById('withdrawalId');
 const loadAddressBtn = document.getElementById('loadAddressBtn');
-const sendBtn = document.getElementById('sendBtn');
+const buildBtn = document.getElementById('buildBtn');
+const signBtn = document.getElementById('signBtn');
+const broadcastBtn = document.getElementById('broadcastBtn');
 const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
 const messageBox = document.getElementById('message');
 const latestBox = document.getElementById('latest');
@@ -47,6 +50,15 @@ function validUid() {
     return uid;
 }
 
+function validWithdrawalId() {
+    const idText = withdrawalIdInput.value.trim();
+    const id = Number(idText);
+    if (!idText || !Number.isInteger(id) || id <= 0) {
+        return null;
+    }
+    return id;
+}
+
 function renderLatest(withdrawal) {
     if (!withdrawal) {
         latestBox.innerHTML = '<div class="k">No withdrawal yet.</div>';
@@ -84,6 +96,12 @@ function renderHistory(withdrawals) {
             <td>${item.status}</td>
             <td>${new Date(item.createTime).toLocaleString()}</td>
         `;
+        tr.style.cursor = 'pointer';
+        tr.title = 'Click to use this withdrawalId';
+        tr.addEventListener('click', () => {
+            withdrawalIdInput.value = String(item.id);
+            renderLatest(item);
+        });
         historyTbody.appendChild(tr);
     });
 }
@@ -155,10 +173,10 @@ async function sendWithdrawal() {
         return;
     }
 
-    sendBtn.disabled = true;
+    buildBtn.disabled = true;
     showMessage('');
     try {
-        const response = await fetch('/api/eth-withdrawals/send', {
+        const response = await fetch('/api/eth-withdrawals/build', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -176,13 +194,88 @@ async function sendWithdrawal() {
         }
 
         const result = await response.json();
+        withdrawalIdInput.value = String(result.id);
         renderLatest(result);
         await loadHistory();
-        showMessage(`Transaction broadcasted successfully: ${result.txHash}`);
+        showMessage(`Build completed, withdrawalId=${result.id}.`);
     } catch (error) {
         showMessage(error.message || 'Request failed');
     } finally {
-        sendBtn.disabled = false;
+        buildBtn.disabled = false;
+    }
+}
+
+async function signWithdrawal() {
+    const uid = validUid();
+    if (!uid) {
+        showMessage('Please enter a valid positive integer uid.');
+        return;
+    }
+    const withdrawalId = validWithdrawalId();
+    if (!withdrawalId) {
+        showMessage('Please enter a valid withdrawalId.');
+        return;
+    }
+
+    signBtn.disabled = true;
+    showMessage('');
+    try {
+        const response = await fetch('/api/eth-withdrawals/sign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uid, withdrawalId })
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, 'Failed to sign transaction'));
+        }
+
+        const result = await response.json();
+        renderLatest(result);
+        await loadHistory();
+        showMessage(`Sign completed for withdrawalId=${result.id}.`);
+    } catch (error) {
+        showMessage(error.message || 'Request failed');
+    } finally {
+        signBtn.disabled = false;
+    }
+}
+
+async function broadcastWithdrawal() {
+    const uid = validUid();
+    if (!uid) {
+        showMessage('Please enter a valid positive integer uid.');
+        return;
+    }
+    const withdrawalId = validWithdrawalId();
+    if (!withdrawalId) {
+        showMessage('Please enter a valid withdrawalId.');
+        return;
+    }
+
+    broadcastBtn.disabled = true;
+    showMessage('');
+    try {
+        const response = await fetch('/api/eth-withdrawals/broadcast', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uid, withdrawalId })
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, 'Failed to broadcast transaction'));
+        }
+
+        const result = await response.json();
+        renderLatest(result);
+        await loadHistory();
+        showMessage(`Broadcast completed, txHash=${result.txHash || '-'}`);
+    } catch (error) {
+        showMessage(error.message || 'Request failed');
+    } finally {
+        broadcastBtn.disabled = false;
     }
 }
 
@@ -205,4 +298,6 @@ refreshHistoryBtn.addEventListener('click', async () => {
     }
 });
 
-sendBtn.addEventListener('click', sendWithdrawal);
+buildBtn.addEventListener('click', sendWithdrawal);
+signBtn.addEventListener('click', signWithdrawal);
+broadcastBtn.addEventListener('click', broadcastWithdrawal);

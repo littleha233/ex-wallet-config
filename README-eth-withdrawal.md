@@ -7,8 +7,7 @@
 已实现能力：
 - 用户先从已生成地址列表中选择 `from` 地址
 - 输入目标提币地址 `toAddress` 和提币金额 `amountEth`
-- 后端按 EIP-1559 构建交易并用 `from` 地址私钥签名
-- 广播交易到以太坊 RPC 节点
+- 后端按 `Build -> Sign -> Broadcast` 三阶段处理交易
 - 将提币请求与交易结果（成功/失败）落库
 
 页面入口：
@@ -21,7 +20,10 @@
 1. Controller 层
 - `src/main/java/com/example/springdemo/controller/EthWithdrawalApiController.java`
 - 提供接口：
-  - `POST /api/eth-withdrawals/send`
+  - `POST /api/eth-withdrawals/build`
+  - `POST /api/eth-withdrawals/sign`
+  - `POST /api/eth-withdrawals/broadcast`
+  - `POST /api/eth-withdrawals/send`（兼容一键流程）
   - `GET /api/eth-withdrawals?uid=...`
 
 2. Biz 接口层
@@ -102,10 +104,10 @@ eth:
 
 ## API 示例
 
-### 1) 发送提币
+### 1) Build（构建交易）
 
 - 方法：`POST`
-- 路径：`/api/eth-withdrawals/send`
+- 路径：`/api/eth-withdrawals/build`
 - 请求体：
 
 ```json
@@ -117,7 +119,7 @@ eth:
 }
 ```
 
-成功响应示例（节选）：
+响应示例（节选）：
 
 ```json
 {
@@ -125,12 +127,42 @@ eth:
   "uid": 1001,
   "fromAddress": "0x...",
   "toAddress": "0x...",
-  "txHash": "0x...",
-  "status": "SUBMITTED"
+  "txHash": null,
+  "status": "BUILT"
 }
 ```
 
-### 2) 查询提币历史
+### 2) Sign（签名）
+
+- 方法：`POST`
+- 路径：`/api/eth-withdrawals/sign`
+- 请求体：
+
+```json
+{
+  "uid": 1001,
+  "withdrawalId": 12
+}
+```
+
+响应状态：`SIGNED`
+
+### 3) Broadcast（广播）
+
+- 方法：`POST`
+- 路径：`/api/eth-withdrawals/broadcast`
+- 请求体：
+
+```json
+{
+  "uid": 1001,
+  "withdrawalId": 12
+}
+```
+
+响应状态：`SUBMITTED`，并返回 `txHash`
+
+### 4) 查询提币历史
 
 - 方法：`GET`
 - 路径：`/api/eth-withdrawals?uid=1001`
@@ -151,6 +183,7 @@ eth:
 - `gas_limit`
 - `max_priority_fee_per_gas`
 - `max_fee_per_gas`
+- `signed_raw_tx`
 - `tx_hash`
 - `status`
 - `error_message`

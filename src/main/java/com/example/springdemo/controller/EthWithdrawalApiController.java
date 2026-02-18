@@ -26,8 +26,37 @@ public class EthWithdrawalApiController {
         this.ethWithdrawalBiz = ethWithdrawalBiz;
     }
 
+    @PostMapping("/build")
+    public EthWithdrawal build(@RequestBody BuildWithdrawalRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+        }
+        return ethWithdrawalBiz.build(
+            request.uid(),
+            request.fromWalletId(),
+            request.toAddress(),
+            request.amountEth()
+        );
+    }
+
+    @PostMapping("/sign")
+    public EthWithdrawal sign(@RequestBody StageActionRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+        }
+        return ethWithdrawalBiz.sign(request.uid(), request.withdrawalId());
+    }
+
+    @PostMapping("/broadcast")
+    public EthWithdrawal broadcast(@RequestBody StageActionRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
+        }
+        return ethWithdrawalBiz.broadcast(request.uid(), request.withdrawalId());
+    }
+
     @PostMapping("/send")
-    public EthWithdrawal send(@RequestBody SendWithdrawalRequest request) {
+    public EthWithdrawal send(@RequestBody BuildWithdrawalRequest request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
         }
@@ -52,7 +81,10 @@ public class EthWithdrawalApiController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
     }
 
-    public record SendWithdrawalRequest(Long uid, Long fromWalletId, String toAddress, BigDecimal amountEth) {
+    public record BuildWithdrawalRequest(Long uid, Long fromWalletId, String toAddress, BigDecimal amountEth) {
+    }
+
+    public record StageActionRequest(Long uid, Long withdrawalId) {
     }
 
     public record ErrorResponse(String message) {

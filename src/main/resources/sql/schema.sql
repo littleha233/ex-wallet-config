@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS eth_withdrawal (
     gas_limit VARCHAR(78) NOT NULL,
     max_priority_fee_per_gas VARCHAR(78) NOT NULL,
     max_fee_per_gas VARCHAR(78) NOT NULL,
+    signed_raw_tx TEXT,
     tx_hash VARCHAR(66),
     status VARCHAR(32) NOT NULL,
     error_message VARCHAR(1000),

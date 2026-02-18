@@ -41,18 +41,72 @@ public class EthWithdrawalService implements EthWithdrawalBiz {
 
     @Override
     public EthWithdrawal withdraw(Long uid, Long fromWalletId, String toAddress, BigDecimal amountEth) {
+        EthWithdrawal withdrawal = build(uid, fromWalletId, toAddress, amountEth);
+        withdrawal = sign(uid, withdrawal.getId());
+        return broadcast(uid, withdrawal.getId());
+    }
+
+    @Override
+    public EthWithdrawal build(Long uid, Long fromWalletId, String toAddress, BigDecimal amountEth) {
         EthWithdrawal withdrawal = null;
         try {
             BuildStageResult buildStageResult = buildStage(uid, fromWalletId, toAddress, amountEth);
-            withdrawal = buildStageResult.withdrawal();
-            SignStageResult signStageResult = signStage(withdrawal, buildStageResult.rawTransaction(), buildStageResult.privateKeyHex());
-            return broadcastStage(withdrawal, signStageResult.signedRawTxHex());
+            return buildStageResult.withdrawal();
         } catch (EthWithdrawalException e) {
             markFailed(withdrawal, e.getMessage());
             throw e;
         } catch (Exception e) {
             markFailed(withdrawal, e.getMessage());
-            throw new EthWithdrawalException("Failed to sign and broadcast transaction", e);
+            throw new EthWithdrawalException("Failed to build transaction", e);
+        }
+    }
+
+    @Override
+    public EthWithdrawal sign(Long uid, Long withdrawalId) {
+        EthWithdrawal withdrawal = findWithdrawal(uid, withdrawalId);
+        if (!STATUS_BUILT.equals(withdrawal.getStatus())) {
+            throw new EthWithdrawalException("Only BUILT withdrawal can be signed");
+        }
+
+        EthWallet fromWallet = ethWalletRepository.findByIdAndUid(withdrawal.getFromWalletId(), uid)
+            .orElseThrow(() -> new EthWithdrawalException("From wallet not found"));
+        if (fromWallet.getPrivateKey() == null || fromWallet.getPrivateKey().isBlank()) {
+            throw new EthWithdrawalException("From wallet private key is missing");
+        }
+
+        try {
+            RawTransaction rawTransaction = buildRawTransactionFromWithdrawal(withdrawal);
+            SignStageResult signStageResult = signStage(withdrawal, rawTransaction, fromWallet.getPrivateKey());
+            withdrawal.setSignedRawTx(signStageResult.signedRawTxHex());
+            withdrawal.setErrorMessage(null);
+            return ethWithdrawalRepository.save(withdrawal);
+        } catch (EthWithdrawalException e) {
+            markFailed(withdrawal, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            markFailed(withdrawal, e.getMessage());
+            throw new EthWithdrawalException("Failed to sign transaction", e);
+        }
+    }
+
+    @Override
+    public EthWithdrawal broadcast(Long uid, Long withdrawalId) {
+        EthWithdrawal withdrawal = findWithdrawal(uid, withdrawalId);
+        if (!STATUS_SIGNED.equals(withdrawal.getStatus())) {
+            throw new EthWithdrawalException("Only SIGNED withdrawal can be broadcast");
+        }
+        if (withdrawal.getSignedRawTx() == null || withdrawal.getSignedRawTx().isBlank()) {
+            throw new EthWithdrawalException("signedRawTx is missing, please sign first");
+        }
+
+        try {
+            return broadcastStage(withdrawal, withdrawal.getSignedRawTx());
+        } catch (EthWithdrawalException e) {
+            markFailed(withdrawal, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            markFailed(withdrawal, e.getMessage());
+            throw new EthWithdrawalException("Failed to broadcast transaction", e);
         }
     }
 
@@ -137,6 +191,7 @@ public class EthWithdrawalService implements EthWithdrawalBiz {
         String txHash = ethereumChainService.sendRawTransaction(signedRawTxHex);
         withdrawal.setStatus(STATUS_SUBMITTED);
         withdrawal.setTxHash(txHash);
+        withdrawal.setErrorMessage(null);
         return ethWithdrawalRepository.save(withdrawal);
     }
 
@@ -168,5 +223,36 @@ public class EthWithdrawalService implements EthWithdrawalBiz {
     }
 
     private record SignStageResult(String signedRawTxHex) {
+    }
+
+    private EthWithdrawal findWithdrawal(Long uid, Long withdrawalId) {
+        if (uid == null || uid <= 0) {
+            throw new EthWithdrawalException("uid must be a positive number");
+        }
+        if (withdrawalId == null || withdrawalId <= 0) {
+            throw new EthWithdrawalException("withdrawalId must be a positive number");
+        }
+        return ethWithdrawalRepository.findByIdAndUid(withdrawalId, uid)
+            .orElseThrow(() -> new EthWithdrawalException("Withdrawal record not found for this uid"));
+    }
+
+    private RawTransaction buildRawTransactionFromWithdrawal(EthWithdrawal withdrawal) {
+        return RawTransaction.createEtherTransaction(
+            ethereumChainService.chainId(),
+            parseBigInteger(withdrawal.getNonceValue(), "nonceValue"),
+            parseBigInteger(withdrawal.getGasLimit(), "gasLimit"),
+            withdrawal.getToAddress(),
+            parseBigInteger(withdrawal.getAmountWei(), "amountWei"),
+            parseBigInteger(withdrawal.getMaxPriorityFeePerGas(), "maxPriorityFeePerGas"),
+            parseBigInteger(withdrawal.getMaxFeePerGas(), "maxFeePerGas")
+        );
+    }
+
+    private BigInteger parseBigInteger(String value, String fieldName) {
+        try {
+            return new BigInteger(value);
+        } catch (Exception e) {
+            throw new EthWithdrawalException("Invalid numeric field: " + fieldName, e);
+        }
     }
 }
