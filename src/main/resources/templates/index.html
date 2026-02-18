@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Demo Notes</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f7fb;
+            --card: #ffffff;
+            --accent: #0f62fe;
+            --text: #1b1f24;
+            --muted: #5b6470;
+            --border: #e5e8ef;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .container {
+            max-width: 880px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        header {
+            margin-bottom: 24px;
+        }
+        h1 {
+            margin: 0 0 6px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: var(--muted);
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        }
+        form {
+            display: grid;
+            gap: 12px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+        }
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .list {
+            display: grid;
+            gap: 12px;
+        }
+        .note-title {
+            font-weight: 600;
+        }
+        .note-meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Spring Boot Notes</h1>
+        <div class="subtitle">Simple CRUD demo with REST API + Thymeleaf</div>
+    </header>
+
+    <section class="card">
+        <h2>Create a Note</h2>
+        <form id="noteForm">
+            <input type="text" id="title" placeholder="Title" required />
+            <textarea id="content" rows="4" placeholder="Content" required></textarea>
+            <button type="submit">Save</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Notes</h2>
+        <div id="noteList" class="list"></div>
+    </section>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
