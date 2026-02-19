@@ -34,15 +34,12 @@ Facade 的核心价值是：把“多表查询 + 校验 + 返回模型”统一�
 ### 3.3 返回说明
 
 返回该币种在指定区块链下的完整扩展参数配置，包括：
-- 币种基础信息：`coinId`、`symbol`、`fullName`、`coinPrecision`、`iconUrl`
-- 链信息：`blockchainId`、`chainCode`、`chainName`
-- 扩展配置：`rpcUrl`、`collectionAddress`、`withdrawAddress`、`minWithdrawAmount`、`withdrawPrecision`、`minDepositAmount`、`depositPrecision`、`extraJson`、`enabled`
-- 时间信息：`createTime`、`updateTime`
+- `coin_chain_config` 对应字段：`id`、`coinId`、`blockchainId`、`chainCode`、`chainName`、`rpcUrl`、`collectionAddress`、`withdrawAddress`、`minWithdrawAmount`、`withdrawPrecision`、`minDepositAmount`、`depositPrecision`、`extraJson`、`enabled`、`createTime`、`updateTime`
 
 ### 3.4 状态码
 
 - `200`：查询成功
-- `404`：按 `coinId + blockchainId` 未找到配置
+- `404`：按 `coinId + blockchainId` 未找到配置（空响应体）
 - `400`：参数非法（例如负数）
 
 ## 4. 调用示例
@@ -55,11 +52,8 @@ curl "http://localhost:8080/api/facade/config/coin-chain?coinId=1&blockchainId=0
 
 ```json
 {
+  "id": 12,
   "coinId": 1,
-  "symbol": "USDT",
-  "fullName": "Tether USD",
-  "coinPrecision": 6,
-  "iconUrl": "/uploads/coin-icons/usdt.png",
   "blockchainId": 0,
   "chainCode": "ETH",
   "chainName": "Ethereum",
@@ -82,6 +76,8 @@ curl "http://localhost:8080/api/facade/config/coin-chain?coinId=1&blockchainId=0
 - Facade Biz：`src/main/java/com/example/springdemo/biz/ConfigFacadeBiz.java`
 - Facade Service：`src/main/java/com/example/springdemo/service/ConfigFacadeService.java`
 - Facade Controller：`src/main/java/com/example/springdemo/controller/ConfigFacadeApiController.java`
+- Facade Request：`src/main/java/com/example/springdemo/facade/dto/QueryCoinChainConfigRequest.java`
+- Facade Response：`src/main/java/com/example/springdemo/facade/dto/CoinChainConfigResponse.java`
 
 ## 6. 后续演进建议
 

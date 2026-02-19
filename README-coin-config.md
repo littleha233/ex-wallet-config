@@ -104,16 +104,13 @@ SQL 文件：
 
 说明：
 - 入参使用业务ID：`coinId`（币种ID）+ `blockchainId`（区块链ID）
-- 返回该币种在该区块链下的完整扩展参数配置（找不到返回 404）
+- 返回 `coin_chain_config` 对应的强类型响应（找不到返回 404）
 
 返回示例：
 ```json
 {
+  "id": 12,
   "coinId": 1,
-  "symbol": "USDT",
-  "fullName": "Tether USD",
-  "coinPrecision": 6,
-  "iconUrl": "/uploads/coin-icons/usdt.png",
   "blockchainId": 0,
   "chainCode": "ETH",
   "chainName": "Ethereum",

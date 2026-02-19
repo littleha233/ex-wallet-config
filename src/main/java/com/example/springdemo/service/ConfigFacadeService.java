@@ -3,6 +3,7 @@ package com.example.springdemo.service;
 import com.example.springdemo.biz.ConfigFacadeBiz;
 import com.example.springdemo.domain.Coin;
 import com.example.springdemo.domain.CoinChainConfig;
+import com.example.springdemo.facade.dto.CoinChainConfigResponse;
 import com.example.springdemo.repository.CoinChainConfigRepository;
 import com.example.springdemo.repository.CoinRepository;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class ConfigFacadeService implements ConfigFacadeBiz {
     }
 
     @Override
-    public Optional<CoinChainConfigView> queryCoinChainConfig(Integer coinId, Integer blockchainId) {
+    public Optional<CoinChainConfigResponse> queryCoinChainConfig(Integer coinId, Integer blockchainId) {
         validateNonNegative(coinId, "coinId");
         validateNonNegative(blockchainId, "blockchainId");
 
@@ -36,27 +37,24 @@ public class ConfigFacadeService implements ConfigFacadeBiz {
         }
         CoinChainConfig config = configOptional.get();
 
-        return Optional.of(new CoinChainConfigView(
-            coin.getCoinId(),
-            coin.getSymbol(),
-            coin.getFullName(),
-            coin.getCoinPrecision(),
-            coin.getIconUrl(),
-            config.getBlockchainId(),
-            config.getChainCode(),
-            config.getChainName(),
-            config.getRpcUrl(),
-            config.getCollectionAddress(),
-            config.getWithdrawAddress(),
-            config.getMinWithdrawAmount(),
-            config.getWithdrawPrecision(),
-            config.getMinDepositAmount(),
-            config.getDepositPrecision(),
-            config.getExtraJson(),
-            config.getEnabled(),
-            config.getCreateTime(),
-            config.getUpdateTime()
-        ));
+        CoinChainConfigResponse response = new CoinChainConfigResponse();
+        response.setId(config.getId());
+        response.setCoinId(config.getCoinId());
+        response.setBlockchainId(config.getBlockchainId());
+        response.setChainCode(config.getChainCode());
+        response.setChainName(config.getChainName());
+        response.setRpcUrl(config.getRpcUrl());
+        response.setCollectionAddress(config.getCollectionAddress());
+        response.setWithdrawAddress(config.getWithdrawAddress());
+        response.setMinWithdrawAmount(config.getMinWithdrawAmount());
+        response.setWithdrawPrecision(config.getWithdrawPrecision());
+        response.setMinDepositAmount(config.getMinDepositAmount());
+        response.setDepositPrecision(config.getDepositPrecision());
+        response.setExtraJson(config.getExtraJson());
+        response.setEnabled(config.getEnabled());
+        response.setCreateTime(config.getCreateTime());
+        response.setUpdateTime(config.getUpdateTime());
+        return Optional.of(response);
     }
 
     private void validateNonNegative(Integer value, String field) {
