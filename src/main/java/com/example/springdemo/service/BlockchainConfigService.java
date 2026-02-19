@@ -24,15 +24,20 @@ public class BlockchainConfigService implements BlockchainConfigBiz {
     }
 
     @Override
-    public BlockchainConfig create(String chainCode, String chainName, Boolean enabled) {
+    public BlockchainConfig create(Integer blockchainId, String chainCode, String chainName, Boolean enabled) {
+        int normalizedBlockchainId = validateBlockchainId(blockchainId);
         String normalizedChainCode = requireText(chainCode, "chainCode").toUpperCase();
         String normalizedChainName = requireText(chainName, "chainName");
 
+        if (blockchainConfigRepository.existsByBlockchainId(normalizedBlockchainId)) {
+            throw new IllegalArgumentException("blockchainId already exists");
+        }
         if (blockchainConfigRepository.existsByChainCodeIgnoreCase(normalizedChainCode)) {
             throw new IllegalArgumentException("chainCode already exists");
         }
 
         BlockchainConfig blockchainConfig = new BlockchainConfig(
+            normalizedBlockchainId,
             normalizedChainCode,
             normalizedChainName,
             enabled == null ? Boolean.TRUE : enabled
@@ -41,22 +46,34 @@ public class BlockchainConfigService implements BlockchainConfigBiz {
     }
 
     @Override
-    public BlockchainConfig update(Long id, String chainCode, String chainName, Boolean enabled) {
+    public BlockchainConfig update(Long id, Integer blockchainId, String chainCode, String chainName, Boolean enabled) {
         validatePositiveId(id, "id");
         BlockchainConfig blockchainConfig = blockchainConfigRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("blockchain config not found"));
 
+        int normalizedBlockchainId = validateBlockchainId(blockchainId);
         String normalizedChainCode = requireText(chainCode, "chainCode").toUpperCase();
         String normalizedChainName = requireText(chainName, "chainName");
 
+        if (blockchainConfigRepository.existsByBlockchainIdAndIdNot(normalizedBlockchainId, id)) {
+            throw new IllegalArgumentException("blockchainId already exists");
+        }
         if (blockchainConfigRepository.existsByChainCodeIgnoreCaseAndIdNot(normalizedChainCode, id)) {
             throw new IllegalArgumentException("chainCode already exists");
         }
 
+        blockchainConfig.setBlockchainId(normalizedBlockchainId);
         blockchainConfig.setChainCode(normalizedChainCode);
         blockchainConfig.setChainName(normalizedChainName);
         blockchainConfig.setEnabled(enabled == null ? Boolean.TRUE : enabled);
         return blockchainConfigRepository.save(blockchainConfig);
+    }
+
+    private int validateBlockchainId(Integer blockchainId) {
+        if (blockchainId == null || blockchainId < 0) {
+            throw new IllegalArgumentException("blockchainId must be a non-negative integer");
+        }
+        return blockchainId;
     }
 
     private String requireText(String value, String field) {

@@ -7,7 +7,7 @@ import java.util.List;
 public interface BlockchainConfigBiz {
     List<BlockchainConfig> list(Boolean enabled);
 
-    BlockchainConfig create(String chainCode, String chainName, Boolean enabled);
+    BlockchainConfig create(Integer blockchainId, String chainCode, String chainName, Boolean enabled);
 
-    BlockchainConfig update(Long id, String chainCode, String chainName, Boolean enabled);
+    BlockchainConfig update(Long id, Integer blockchainId, String chainCode, String chainName, Boolean enabled);
 }

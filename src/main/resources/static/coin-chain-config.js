@@ -193,7 +193,8 @@ function renderChainSelect() {
     blockchains.forEach((item) => {
         const option = document.createElement('option');
         option.value = item.chainCode;
-        option.textContent = `${item.chainCode} - ${item.chainName}${item.enabled ? '' : '（禁用）'}`;
+        const chainIdText = item.blockchainId === undefined || item.blockchainId === null ? '-' : item.blockchainId;
+        option.textContent = `#${chainIdText} ${item.chainCode} - ${item.chainName}${item.enabled ? '' : '（禁用）'}`;
         option.disabled = item.enabled === false;
         chainCodeInput.appendChild(option);
     });

@@ -1,3 +1,4 @@
+const filterBlockchainId = document.getElementById('filterBlockchainId');
 const filterChainCode = document.getElementById('filterChainCode');
 const filterChainName = document.getElementById('filterChainName');
 const filterEnabled = document.getElementById('filterEnabled');
@@ -10,6 +11,7 @@ const chainTableBody = document.getElementById('chainTableBody');
 const chainModalMask = document.getElementById('chainModalMask');
 const chainModalTitle = document.getElementById('chainModalTitle');
 const closeModalBtn = document.getElementById('closeModalBtn');
+const blockchainIdInput = document.getElementById('blockchainIdInput');
 const chainCodeInput = document.getElementById('chainCodeInput');
 const chainNameInput = document.getElementById('chainNameInput');
 const enabledInput = document.getElementById('enabledInput');
@@ -58,11 +60,15 @@ async function loadBlockchains() {
 }
 
 function applyFilter() {
+    const blockchainIdKeyword = filterBlockchainId.value.trim();
     const chainCodeKeyword = filterChainCode.value.trim().toUpperCase();
     const chainNameKeyword = filterChainName.value.trim().toLowerCase();
     const enabledValue = filterEnabled.value;
 
     filteredBlockchains = blockchains.filter((item) => {
+        if (blockchainIdKeyword && String(item.blockchainId ?? '') !== blockchainIdKeyword) {
+            return false;
+        }
         if (chainCodeKeyword && !String(item.chainCode || '').toUpperCase().includes(chainCodeKeyword)) {
             return false;
         }
@@ -81,7 +87,7 @@ function applyFilter() {
 function renderTable() {
     chainTableBody.innerHTML = '';
     if (!filteredBlockchains.length) {
-        chainTableBody.innerHTML = '<tr><td colspan="6">暂无数据</td></tr>';
+        chainTableBody.innerHTML = '<tr><td colspan="7">暂无数据</td></tr>';
         return;
     }
 
@@ -89,6 +95,7 @@ function renderTable() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.id}</td>
+            <td>${item.blockchainId ?? '-'}</td>
             <td>${item.chainCode}</td>
             <td>${item.chainName}</td>
             <td>${item.enabled ? '启用' : '禁用'}</td>
@@ -101,6 +108,7 @@ function renderTable() {
 
 function clearForm() {
     currentEditId = null;
+    blockchainIdInput.value = '';
     chainCodeInput.value = '';
     chainNameInput.value = '';
     enabledInput.value = 'true';
@@ -117,6 +125,7 @@ function openEditModal(item) {
     clearForm();
     currentEditId = item.id;
     chainModalTitle.textContent = '编辑区块链';
+    blockchainIdInput.value = item.blockchainId ?? '';
     chainCodeInput.value = item.chainCode || '';
     chainNameInput.value = item.chainName || '';
     enabledInput.value = item.enabled ? 'true' : 'false';
@@ -129,14 +138,20 @@ function closeModal() {
 }
 
 async function saveChain() {
+    const blockchainIdValue = blockchainIdInput.value.trim();
     const payload = {
+        blockchainId: Number(blockchainIdValue),
         chainCode: chainCodeInput.value.trim(),
         chainName: chainNameInput.value.trim(),
         enabled: enabledInput.value === 'true'
     };
 
+    if (!blockchainIdValue || !Number.isInteger(payload.blockchainId) || payload.blockchainId < 0) {
+        showMsg(modalMsg, 'blockchainId 必须是非负整数');
+        return;
+    }
     if (!payload.chainCode || !payload.chainName) {
-        showMsg(modalMsg, 'chainCode 和 chainName 不能为空');
+        showMsg(modalMsg, 'blockchainId、chainCode 和 chainName 不能为空');
         return;
     }
 
@@ -185,6 +200,7 @@ searchBtn.addEventListener('click', () => {
 });
 
 resetFilterBtn.addEventListener('click', () => {
+    filterBlockchainId.value = '';
     filterChainCode.value = '';
     filterChainName.value = '';
     filterEnabled.value = 'all';

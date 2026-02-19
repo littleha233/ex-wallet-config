@@ -17,6 +17,7 @@ import java.time.Instant;
 @Table(
     name = "blockchain_config",
     uniqueConstraints = {
+        @UniqueConstraint(name = "uk_blockchain_config_blockchain_id", columnNames = "blockchain_id"),
         @UniqueConstraint(name = "uk_blockchain_config_chain_code", columnNames = "chain_code")
     }
 )
@@ -25,6 +26,9 @@ public class BlockchainConfig {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "blockchain_id", nullable = false)
+    private Integer blockchainId;
 
     @Column(name = "chain_code", nullable = false, length = 32)
     private String chainCode;
@@ -45,7 +49,8 @@ public class BlockchainConfig {
         // for JPA
     }
 
-    public BlockchainConfig(String chainCode, String chainName, Boolean enabled) {
+    public BlockchainConfig(Integer blockchainId, String chainCode, String chainName, Boolean enabled) {
+        this.blockchainId = blockchainId;
         this.chainCode = chainCode;
         this.chainName = chainName;
         this.enabled = enabled;

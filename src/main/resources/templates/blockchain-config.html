@@ -42,7 +42,7 @@
             margin-top: 10px;
             display: grid;
             gap: 10px;
-            grid-template-columns: repeat(4, minmax(180px, 1fr));
+            grid-template-columns: repeat(5, minmax(160px, 1fr));
         }
 
         .field {
@@ -179,6 +179,10 @@
             <section class="panel">
                 <div class="filters">
                     <div class="field">
+                        <label for="filterBlockchainId">区块链ID</label>
+                        <input id="filterBlockchainId" type="number" min="0" step="1" placeholder="例如 0">
+                    </div>
+                    <div class="field">
                         <label for="filterChainCode">区块链简称</label>
                         <input id="filterChainCode" type="text" placeholder="例如 ETH">
                     </div>
@@ -210,7 +214,8 @@
                 <table>
                     <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>记录ID</th>
+                        <th>区块链ID</th>
                         <th>区块链简称</th>
                         <th>区块链全称</th>
                         <th>状态</th>
@@ -233,6 +238,10 @@
         </div>
 
         <div class="modal-grid">
+            <div class="field">
+                <label for="blockchainIdInput">区块链ID</label>
+                <input id="blockchainIdInput" type="number" min="0" step="1" placeholder="从0开始">
+            </div>
             <div class="field">
                 <label for="chainCodeInput">区块链简称</label>
                 <input id="chainCodeInput" type="text" placeholder="ETH / BSC / SOL">

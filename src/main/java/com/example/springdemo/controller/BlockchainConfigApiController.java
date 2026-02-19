@@ -33,6 +33,7 @@ public class BlockchainConfigApiController {
     @PostMapping
     public BlockchainConfig create(@RequestBody SaveBlockchainConfigRequest request) {
         return blockchainConfigBiz.create(
+            request.blockchainId(),
             request.chainCode(),
             request.chainName(),
             request.enabled()
@@ -43,6 +44,7 @@ public class BlockchainConfigApiController {
     public BlockchainConfig update(@PathVariable Long id, @RequestBody SaveBlockchainConfigRequest request) {
         return blockchainConfigBiz.update(
             id,
+            request.blockchainId(),
             request.chainCode(),
             request.chainName(),
             request.enabled()
@@ -55,6 +57,7 @@ public class BlockchainConfigApiController {
     }
 
     public record SaveBlockchainConfigRequest(
+        Integer blockchainId,
         String chainCode,
         String chainName,
         Boolean enabled

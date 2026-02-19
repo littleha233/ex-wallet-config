@@ -11,9 +11,15 @@ public interface BlockchainConfigRepository extends JpaRepository<BlockchainConf
 
     List<BlockchainConfig> findByEnabledOrderByIdDesc(Boolean enabled);
 
+    boolean existsByBlockchainId(Integer blockchainId);
+
+    boolean existsByBlockchainIdAndIdNot(Integer blockchainId, Long id);
+
     boolean existsByChainCodeIgnoreCase(String chainCode);
 
     boolean existsByChainCodeIgnoreCaseAndIdNot(String chainCode, Long id);
+
+    Optional<BlockchainConfig> findByBlockchainId(Integer blockchainId);
 
     Optional<BlockchainConfig> findByChainCodeIgnoreCase(String chainCode);
 }
