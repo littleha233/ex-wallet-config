@@ -16,10 +16,21 @@ mvn spring-boot:run
 ```
 
 启动后访问：
-- 首页：`http://localhost:8080/`
+- 登录页：`http://localhost:8080/login`
+- 注册页：`http://localhost:8080/register`
+- 首页：`http://localhost:8080/`（需登录）
 - 币种配置：`http://localhost:8080/coin-config`
 - 区块链配置：`http://localhost:8080/blockchain-config`
 - 币种扩展参数配置：`http://localhost:8080/coin-chain-config`
+
+默认管理员账号：
+- 用户名：`admin`
+- 密码：`123456`
+
+说明：
+- 未登录用户无法访问前端配置页面及配置管理 API。
+- 注册成功并登录后可访问页面并修改配置。
+- 对外 Facade 查询接口保持可匿名访问：`GET /api/facade/config/coin-chain`
 
 IDE 启动入口：
 - `src/main/java/com/example/springdemo/ExWalletConfigApplication.java`
@@ -47,6 +58,7 @@ SQL 文件：
 - 新增区块链配置与链全称字段：`src/main/resources/sql/migration/20260218_add_blockchain_config_and_chain_name.sql`
 - 新增区块链业务ID：`src/main/resources/sql/migration/20260219_add_blockchain_business_id.sql`
 - 优化字段顺序并新增扩展参数区块链ID：`src/main/resources/sql/migration/20260219_optimize_table_column_order_and_add_coin_chain_blockchain_id.sql`
+- 新增用户表：`src/main/resources/sql/migration/20260219_add_app_user_table.sql`
 - 收敛清理旧表：`src/main/resources/sql/migration/20260218_drop_non_config_tables.sql`
 
 ## 说明文档
@@ -54,3 +66,4 @@ SQL 文件：
 - `README-coin-config.md`
 - `README-facade.md`
 - `README-blockchain-repository.md`
+- `README-auth.md`
