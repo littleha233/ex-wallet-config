@@ -4,6 +4,7 @@
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/controller/BlockchainConfigApiController.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/biz/ConfigFacadeBiz.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/service/CoinChainConfigService.java
+/Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/service/SystemAddressService.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/domain/BlockchainConfig.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/web/GlobalRestExceptionHandler.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/service/CoinIconService.java
@@ -22,6 +23,7 @@
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/logging/LogContext.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/biz/CoinIconBiz.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/service/CoinService.java
+/Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/biz/SystemAddressBiz.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/biz/BlockchainConfigBiz.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/domain/Coin.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/config/StaticResourceConfig.java
@@ -37,7 +39,9 @@
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/controller/CoinApiController.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/web/ApiErrorResponse.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/config/DefaultConfigDataInitializer.java
+/Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/config/SystemAddressGeneratorProperties.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/auth/service/UserAccountService.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/error/BusinessException.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/auth/controller/AuthController.java
+/Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/controller/SystemAddressApiController.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/config/CoinIconProperties.java

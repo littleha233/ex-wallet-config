@@ -30,3 +30,9 @@ management:
 app:
   bootstrap:
     seed-default-config-data: false
+
+system:
+  address-generator:
+    enabled: ${SYSTEM_ADDRESS_GENERATOR_ENABLED:true}
+    base-url: ${SYSTEM_ADDRESS_GENERATOR_BASE_URL:http://127.0.0.1:8091}
+    generate-path: ${SYSTEM_ADDRESS_GENERATOR_GENERATE_PATH:/api/system-addresses/generate}

@@ -4,8 +4,11 @@ const filterEnabled = document.getElementById('filterEnabled');
 const searchBtn = document.getElementById('searchBtn');
 const resetFilterBtn = document.getElementById('resetFilterBtn');
 const addConfigBtn = document.getElementById('addConfigBtn');
+const generateSystemAddressBtn = document.getElementById('generateSystemAddressBtn');
 const pageMsg = document.getElementById('pageMsg');
 const chainTableBody = document.getElementById('chainTableBody');
+const tableScroll = document.querySelector('.table-scroll');
+const selectAllRowsCheckbox = document.getElementById('selectAllRowsCheckbox');
 
 const chainModalMask = document.getElementById('chainModalMask');
 const chainModalTitle = document.getElementById('chainModalTitle');
@@ -46,9 +49,168 @@ let filteredChainConfigs = [];
 let currentEditId = null;
 let currentEditSnapshot = null;
 let kvContext = null;
+let isTableDragging = false;
+let dragStartX = 0;
+let dragStartScrollLeft = 0;
+let selectedConfigIds = new Set();
 
 function showMsg(el, text) {
     el.textContent = text || '';
+}
+
+function initTableDragScroll() {
+    if (!tableScroll) {
+        return;
+    }
+
+    tableScroll.addEventListener('mousedown', (event) => {
+        if (event.button !== 0) {
+            return;
+        }
+        if (event.target.closest('button, a, input, select, textarea')) {
+            return;
+        }
+        isTableDragging = true;
+        dragStartX = event.pageX;
+        dragStartScrollLeft = tableScroll.scrollLeft;
+        tableScroll.classList.add('dragging');
+    });
+
+    window.addEventListener('mousemove', (event) => {
+        if (!isTableDragging) {
+            return;
+        }
+        event.preventDefault();
+        const deltaX = event.pageX - dragStartX;
+        tableScroll.scrollLeft = dragStartScrollLeft - deltaX;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isTableDragging) {
+            return;
+        }
+        isTableDragging = false;
+        tableScroll.classList.remove('dragging');
+    });
+
+    tableScroll.addEventListener('dragstart', (event) => {
+        event.preventDefault();
+    });
+}
+
+function formatTime(value) {
+    if (!value) {
+        return '-';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function getVisibleConfigIds() {
+    return filteredChainConfigs.map((config) => config.id);
+}
+
+function syncSelectedIdsWithCurrentData() {
+    const validIds = new Set(chainConfigs.map((config) => config.id));
+    selectedConfigIds.forEach((id) => {
+        if (!validIds.has(id)) {
+            selectedConfigIds.delete(id);
+        }
+    });
+}
+
+function updateSelectAllCheckboxState() {
+    if (!selectAllRowsCheckbox) {
+        return;
+    }
+    const visibleIds = getVisibleConfigIds();
+    if (!visibleIds.length) {
+        selectAllRowsCheckbox.checked = false;
+        selectAllRowsCheckbox.indeterminate = false;
+        selectAllRowsCheckbox.disabled = true;
+        return;
+    }
+
+    selectAllRowsCheckbox.disabled = false;
+    const selectedVisibleCount = visibleIds.filter((id) => selectedConfigIds.has(id)).length;
+    selectAllRowsCheckbox.checked = selectedVisibleCount === visibleIds.length;
+    selectAllRowsCheckbox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleIds.length;
+}
+
+function setSelectAllForVisibleRows(checked) {
+    getVisibleConfigIds().forEach((id) => {
+        if (checked) {
+            selectedConfigIds.add(id);
+        } else {
+            selectedConfigIds.delete(id);
+        }
+    });
+
+    chainTableBody.querySelectorAll('.row-select-checkbox').forEach((checkbox) => {
+        checkbox.checked = checked;
+        const row = checkbox.closest('tr.data-row');
+        if (row) {
+            row.classList.toggle('selected-row', checked);
+        }
+    });
+    updateSelectAllCheckboxState();
+}
+
+function getSelectedCoinChainConfigs() {
+    return chainConfigs.filter((config) => selectedConfigIds.has(config.id));
+}
+
+window.getSelectedCoinChainConfigs = getSelectedCoinChainConfigs;
+
+async function generateSystemAddress() {
+    const selected = getSelectedCoinChainConfigs();
+    if (selected.length !== 1) {
+        showMsg(pageMsg, '请先勾选且仅勾选一条配置记录，再生成系统地址');
+        return;
+    }
+
+    const config = selected[0];
+    const coin = coinMap.get(config.coinId);
+    if (!coin) {
+        showMsg(pageMsg, '所选配置关联的币种不存在，请刷新后重试');
+        return;
+    }
+    if (!Number.isInteger(config.blockchainId) || config.blockchainId < 0) {
+        showMsg(pageMsg, '所选配置缺少有效 blockchainId');
+        return;
+    }
+
+    const payload = {
+        coinId: coin.coinId,
+        blockchainId: config.blockchainId
+    };
+
+    generateSystemAddressBtn.disabled = true;
+    showMsg(pageMsg, '');
+    try {
+        const response = await fetch('/api/system-addresses/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            throw new Error(await parseError(response, '生成系统地址失败'));
+        }
+
+        const data = await response.json();
+        const address = data && data.address ? String(data.address) : '';
+        if (!address) {
+            throw new Error('地址服务未返回 address');
+        }
+        showMsg(pageMsg, `系统地址生成成功：${address}`);
+    } catch (error) {
+        showMsg(pageMsg, error.message || '生成系统地址失败');
+    } finally {
+        generateSystemAddressBtn.disabled = false;
+    }
 }
 
 function escapeHtml(value) {
@@ -247,6 +409,7 @@ async function loadChainConfigs() {
         throw new Error(await parseError(response, '加载扩展参数失败'));
     }
     chainConfigs = await response.json();
+    syncSelectedIdsWithCurrentData();
     applyFilter();
 }
 
@@ -269,48 +432,72 @@ function applyFilter() {
     renderTable();
 }
 
-function getJsonPreview(config) {
+function getCompactExtraJson(config) {
+    const raw = String(config.extraJson ?? '').trim();
+    if (!raw) {
+        return '{}';
+    }
     try {
-        const compact = objectToCompactJsonText(parseConfigExtraJsonObject(config));
-        if (compact === '{}') {
-            return '<code>{}</code>';
-        }
-        const text = compact.length > 80 ? `${compact.slice(0, 80)}...` : compact;
-        return `<code title="${escapeHtml(compact)}">${escapeHtml(text)}</code>`;
+        return objectToCompactJsonText(JSON.parse(raw));
     } catch (e) {
-        const raw = String(config.extraJson ?? '');
-        const text = raw.length > 80 ? `${raw.slice(0, 80)}...` : raw;
-        return `<code title="${escapeHtml(raw)}">${escapeHtml(text || '{}')}</code>`;
+        return raw;
     }
 }
 
 function renderTable() {
     chainTableBody.innerHTML = '';
     if (!filteredChainConfigs.length) {
-        chainTableBody.innerHTML = '<tr><td colspan="11">暂无数据</td></tr>';
+        chainTableBody.innerHTML = '<tr><td class="empty-row" colspan="11">暂无数据</td></tr>';
+        updateSelectAllCheckboxState();
         return;
     }
 
-    const fragments = filteredChainConfigs.map((config) => `
-        <tr>
-            <td>${config.id}</td>
-            <td>${escapeHtml(coinLabel(config.coinId))}</td>
-            <td>${config.blockchainId ?? '-'}</td>
-            <td>${escapeHtml(config.chainCode)}</td>
-            <td>${escapeHtml(config.chainName || '-')}</td>
-            <td>${escapeHtml(config.rpcUrl)}</td>
-            <td>${escapeHtml(config.minWithdrawAmount)} / ${config.withdrawPrecision}</td>
-            <td>${escapeHtml(config.minDepositAmount)} / ${config.depositPrecision}</td>
-            <td>${getJsonPreview(config)}</td>
-            <td>${config.enabled ? '启用' : '禁用'}</td>
-            <td>
-                <button type="button" data-action="edit" data-id="${config.id}">编辑</button>
-                <button type="button" class="ghost" data-action="open-row-kv" data-id="${config.id}">展开KV</button>
-            </td>
-        </tr>
-    `);
+    const fragments = filteredChainConfigs.map((config) => {
+        const rpcText = String(config.rpcUrl || '-');
+        const compactExtraJson = getCompactExtraJson(config);
+        const shortExtraJson = compactExtraJson.length > 100 ? `${compactExtraJson.slice(0, 100)}...` : compactExtraJson;
+        const detailRowId = `detail-row-${config.id}`;
+        const checkedAttr = selectedConfigIds.has(config.id) ? 'checked' : '';
+        const selectedClass = selectedConfigIds.has(config.id) ? 'selected-row' : '';
+        return `
+            <tr class="data-row ${selectedClass}">
+                <td class="select-cell">
+                    <input class="row-select-checkbox" type="checkbox" data-id="${config.id}" ${checkedAttr} aria-label="选择配置 ${config.id}">
+                </td>
+                <td>${config.id}</td>
+                <td><span class="cell-ellipsis" title="${escapeHtml(coinLabel(config.coinId))}">${escapeHtml(coinLabel(config.coinId))}</span></td>
+                <td>${config.blockchainId ?? '-'}</td>
+                <td>${escapeHtml(config.chainCode || '-')}</td>
+                <td><span class="cell-ellipsis" title="${escapeHtml(config.chainName || '-')}">${escapeHtml(config.chainName || '-')}</span></td>
+                <td><span class="cell-ellipsis rpc" title="${escapeHtml(rpcText)}">${escapeHtml(rpcText)}</span></td>
+                <td><span class="cell-ellipsis extra" title="${escapeHtml(compactExtraJson)}">${escapeHtml(shortExtraJson)}</span></td>
+                <td><span class="status-chip ${config.enabled ? '' : 'off'}">${config.enabled ? '启用' : '禁用'}</span></td>
+                <td>${formatTime(config.updateTime || config.createTime)}</td>
+                <td>
+                    <div class="row-actions">
+                        <button type="button" class="ghost" data-action="toggle-detail" data-id="${config.id}" data-target="${detailRowId}">详情</button>
+                        <button type="button" data-action="edit" data-id="${config.id}">编辑</button>
+                        <button type="button" class="ghost" data-action="open-row-kv" data-id="${config.id}">展开KV</button>
+                    </div>
+                </td>
+            </tr>
+            <tr id="${detailRowId}" class="detail-row" hidden>
+                <td colspan="11">
+                    <div class="detail-panel">
+                        <div class="detail-item"><div class="detail-label">最小提币数量</div><div class="detail-value">${escapeHtml(config.minWithdrawAmount)}</div></div>
+                        <div class="detail-item"><div class="detail-label">提币精度</div><div class="detail-value">${escapeHtml(config.withdrawPrecision)}</div></div>
+                        <div class="detail-item"><div class="detail-label">最小充值数量</div><div class="detail-value">${escapeHtml(config.minDepositAmount)}</div></div>
+                        <div class="detail-item"><div class="detail-label">充值精度</div><div class="detail-value">${escapeHtml(config.depositPrecision)}</div></div>
+                        <div class="detail-item"><div class="detail-label">归集地址</div><div class="detail-value">${escapeHtml(config.collectionAddress || '-')}</div></div>
+                        <div class="detail-item"><div class="detail-label">提币地址</div><div class="detail-value">${escapeHtml(config.withdrawAddress || '-')}</div></div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
 
     chainTableBody.innerHTML = fragments.join('');
+    updateSelectAllCheckboxState();
 }
 
 function clearForm() {
@@ -573,6 +760,20 @@ chainTableBody.addEventListener('click', async (event) => {
     showMsg(pageMsg, '');
 
     try {
+        if (action === 'toggle-detail') {
+            const detailRowId = button.dataset.target;
+            if (!detailRowId) {
+                return;
+            }
+            const detailRow = document.getElementById(detailRowId);
+            if (!detailRow) {
+                return;
+            }
+            detailRow.hidden = !detailRow.hidden;
+            button.textContent = detailRow.hidden ? '详情' : '收起详情';
+            return;
+        }
+
         if (action === 'edit') {
             const config = chainConfigs.find((item) => item.id === id);
             if (config) {
@@ -603,6 +804,34 @@ chainTableBody.addEventListener('click', async (event) => {
     }
 });
 
+chainTableBody.addEventListener('change', (event) => {
+    const checkbox = event.target.closest('.row-select-checkbox');
+    if (!checkbox) {
+        return;
+    }
+    const id = Number(checkbox.dataset.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return;
+    }
+
+    if (checkbox.checked) {
+        selectedConfigIds.add(id);
+    } else {
+        selectedConfigIds.delete(id);
+    }
+    const row = checkbox.closest('tr.data-row');
+    if (row) {
+        row.classList.toggle('selected-row', checkbox.checked);
+    }
+    updateSelectAllCheckboxState();
+});
+
+if (selectAllRowsCheckbox) {
+    selectAllRowsCheckbox.addEventListener('change', () => {
+        setSelectAllForVisibleRows(selectAllRowsCheckbox.checked);
+    });
+}
+
 searchBtn.addEventListener('click', async () => {
     showMsg(pageMsg, '');
     try {
@@ -625,6 +854,7 @@ resetFilterBtn.addEventListener('click', async () => {
 });
 
 addConfigBtn.addEventListener('click', openCreateModal);
+generateSystemAddressBtn.addEventListener('click', generateSystemAddress);
 closeModalBtn.addEventListener('click', closeModal);
 chainCodeInput.addEventListener('change', syncChainNameByCode);
 chainModalMask.addEventListener('click', (event) => {
@@ -722,6 +952,7 @@ applyKvBtn.addEventListener('click', async () => {
 
 (async function bootstrap() {
     try {
+        initTableDragScroll();
         await Promise.all([loadCoins(), loadBlockchains()]);
         await loadChainConfigs();
     } catch (error) {

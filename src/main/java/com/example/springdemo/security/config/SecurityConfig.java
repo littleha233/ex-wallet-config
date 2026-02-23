@@ -42,7 +42,7 @@ public class SecurityConfig {
                     "/coin-chain-config",
                     "/blockchain-config"
                 ).authenticated()
-                .requestMatchers("/api/coins/**", "/api/coin-chain-configs/**", "/api/blockchain-configs/**").authenticated()
+                .requestMatchers("/api/coins/**", "/api/coin-chain-configs/**", "/api/blockchain-configs/**", "/api/system-addresses/**").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
