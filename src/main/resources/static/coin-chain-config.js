@@ -1,5 +1,5 @@
 const filterCoinSelect = document.getElementById('filterCoinSelect');
-const filterChainCode = document.getElementById('filterChainCode');
+const filterBlockchainSelect = document.getElementById('filterBlockchainSelect');
 const filterEnabled = document.getElementById('filterEnabled');
 const searchBtn = document.getElementById('searchBtn');
 const resetFilterBtn = document.getElementById('resetFilterBtn');
@@ -39,6 +39,11 @@ const addKvRowBtn = document.getElementById('addKvRowBtn');
 const applyKvBtn = document.getElementById('applyKvBtn');
 const kvRowsBody = document.getElementById('kvRowsBody');
 const kvMsg = document.getElementById('kvMsg');
+const addressResultModalMask = document.getElementById('addressResultModalMask');
+const closeAddressResultModalBtn = document.getElementById('closeAddressResultModalBtn');
+const resultCoinValue = document.getElementById('resultCoinValue');
+const resultChainCodeValue = document.getElementById('resultChainCodeValue');
+const resultAddressValue = document.getElementById('resultAddressValue');
 
 let coins = [];
 let coinMap = new Map();
@@ -165,6 +170,23 @@ function getSelectedCoinChainConfigs() {
 
 window.getSelectedCoinChainConfigs = getSelectedCoinChainConfigs;
 
+function openAddressResultModal(coinText, chainCodeText, addressText) {
+    if (!addressResultModalMask) {
+        return;
+    }
+    resultCoinValue.textContent = coinText || '-';
+    resultChainCodeValue.textContent = chainCodeText || '-';
+    resultAddressValue.textContent = addressText || '-';
+    addressResultModalMask.classList.add('show');
+}
+
+function closeAddressResultModal() {
+    if (!addressResultModalMask) {
+        return;
+    }
+    addressResultModalMask.classList.remove('show');
+}
+
 async function generateSystemAddress() {
     const selected = getSelectedCoinChainConfigs();
     if (selected.length !== 1) {
@@ -194,18 +216,28 @@ async function generateSystemAddress() {
         const response = await fetch('/api/system-addresses/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify(payload)
         });
+        if (response.redirected || (response.url && response.url.includes('/login'))) {
+            throw new Error('登录状态已失效，请重新登录后再试');
+        }
         if (!response.ok) {
             throw new Error(await parseError(response, '生成系统地址失败'));
         }
 
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        if (!contentType.includes('application/json')) {
+            throw new Error('生成系统地址失败：服务返回非 JSON 响应，请检查登录状态');
+        }
         const data = await response.json();
         const address = data && data.address ? String(data.address) : '';
         if (!address) {
             throw new Error('地址服务未返回 address');
         }
-        showMsg(pageMsg, `系统地址生成成功：${address}`);
+        const coinText = coin.symbol || coin.fullName || coinLabel(config.coinId);
+        const chainCodeText = config.chainCode || '-';
+        openAddressResultModal(coinText, chainCodeText, address);
     } catch (error) {
         showMsg(pageMsg, error.message || '生成系统地址失败');
     } finally {
@@ -223,11 +255,33 @@ function escapeHtml(value) {
 }
 
 async function parseError(response, fallback) {
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
     try {
-        const body = await response.json();
-        if (body && body.message) {
-            return body.message;
+        if (contentType.includes('application/json')) {
+            const body = await response.json();
+            if (body && body.message) {
+                return body.message;
+            }
+            if (body && body.error) {
+                return body.error;
+            }
+            if (body && body.errorCode) {
+                return `${fallback}（${body.errorCode}）`;
+            }
+            return fallback;
         }
+
+        const text = (await response.text()).trim();
+        if (!text) {
+            return fallback;
+        }
+        if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+            if (response.status === 401 || response.redirected || (response.url && response.url.includes('/login'))) {
+                return '登录状态已失效，请重新登录后再试';
+            }
+            return `${fallback}：服务返回了 HTML 页面`;
+        }
+        return text.replace(/\s+/g, ' ').slice(0, 180);
     } catch (e) {
         // ignore
     }
@@ -369,6 +423,26 @@ function renderChainSelect() {
     syncChainNameByCode();
 }
 
+function renderFilterBlockchainSelect() {
+    const previousValue = filterBlockchainSelect.value;
+    filterBlockchainSelect.innerHTML = '<option value="">全部区块链</option>';
+
+    blockchains.forEach((item) => {
+        if (item.blockchainId === undefined || item.blockchainId === null) {
+            return;
+        }
+        const chainIdText = item.blockchainId === undefined || item.blockchainId === null ? '-' : item.blockchainId;
+        const option = document.createElement('option');
+        option.value = String(item.blockchainId);
+        option.textContent = `#${chainIdText} ${item.chainCode} - ${item.chainName}${item.enabled ? '' : '（禁用）'}`;
+        filterBlockchainSelect.appendChild(option);
+    });
+
+    if (previousValue && [...filterBlockchainSelect.options].some((item) => item.value === previousValue)) {
+        filterBlockchainSelect.value = previousValue;
+    }
+}
+
 function syncChainNameByCode() {
     const selectedCode = chainCodeInput.value;
     if (!selectedCode) {
@@ -399,6 +473,7 @@ async function loadBlockchains() {
     blockchains = await response.json();
     blockchainMap = new Map(blockchains.map((item) => [String(item.chainCode || '').toUpperCase(), item]));
     renderChainSelect();
+    renderFilterBlockchainSelect();
 }
 
 async function loadChainConfigs() {
@@ -414,13 +489,11 @@ async function loadChainConfigs() {
 }
 
 function applyFilter() {
-    const chainKeyword = filterChainCode.value.trim().toUpperCase();
+    const selectedBlockchainId = filterBlockchainSelect.value;
     const enabledValue = filterEnabled.value;
 
     filteredChainConfigs = chainConfigs.filter((config) => {
-        const code = String(config.chainCode || '').toUpperCase();
-        const name = String(config.chainName || '').toUpperCase();
-        if (chainKeyword && !code.includes(chainKeyword) && !name.includes(chainKeyword)) {
+        if (selectedBlockchainId && String(config.blockchainId) !== selectedBlockchainId) {
             return false;
         }
         if (enabledValue !== 'all' && String(config.enabled) !== enabledValue) {
@@ -843,7 +916,7 @@ searchBtn.addEventListener('click', async () => {
 
 resetFilterBtn.addEventListener('click', async () => {
     filterCoinSelect.value = '';
-    filterChainCode.value = '';
+    filterBlockchainSelect.value = '';
     filterEnabled.value = 'all';
     showMsg(pageMsg, '');
     try {
@@ -897,6 +970,17 @@ kvModalMask.addEventListener('click', (event) => {
         closeKvModal();
     }
 });
+
+if (closeAddressResultModalBtn) {
+    closeAddressResultModalBtn.addEventListener('click', closeAddressResultModal);
+}
+if (addressResultModalMask) {
+    addressResultModalMask.addEventListener('click', (event) => {
+        if (event.target === addressResultModalMask) {
+            closeAddressResultModal();
+        }
+    });
+}
 
 addKvRowBtn.addEventListener('click', () => {
     const row = document.createElement('tr');

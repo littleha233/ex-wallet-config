@@ -313,6 +313,40 @@
             font-size: 13px;
         }
 
+        .result-modal {
+            width: min(560px, 100%);
+        }
+
+        .result-grid {
+            margin-top: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .result-item {
+            border: 1px solid #dbe4ef;
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 10px 12px;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #667085;
+            margin-bottom: 4px;
+        }
+
+        .result-value {
+            color: #1f2a37;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .result-value.address {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+        }
+
         @media (max-width: 980px) {
             .filters, .modal-grid { grid-template-columns: 1fr; }
             .span-2 { grid-column: span 1; }
@@ -359,8 +393,10 @@
                         <select id="filterCoinSelect"></select>
                     </div>
                     <div class="field">
-                        <label for="filterChainCode">链简称/链全称</label>
-                        <input id="filterChainCode" type="text" placeholder="例如 ETH / Ethereum">
+                        <label for="filterBlockchainSelect">区块链</label>
+                        <select id="filterBlockchainSelect">
+                            <option value="">全部区块链</option>
+                        </select>
                     </div>
                     <div class="field">
                         <label for="filterEnabled">状态</label>
@@ -514,6 +550,31 @@
             <tbody id="kvRowsBody"></tbody>
         </table>
         <div id="kvMsg" class="msg"></div>
+    </div>
+</div>
+
+<div id="addressResultModalMask" class="modal-mask" style="z-index:140;">
+    <div class="modal result-modal">
+        <div class="title-row">
+            <h3 style="margin:0;font-size:20px;">系统地址生成成功</h3>
+        </div>
+        <div class="result-grid">
+            <div class="result-item">
+                <div class="result-label">币种</div>
+                <div id="resultCoinValue" class="result-value">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">链简称</div>
+                <div id="resultChainCodeValue" class="result-value">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">地址</div>
+                <div id="resultAddressValue" class="result-value address">-</div>
+            </div>
+        </div>
+        <div class="btns" style="margin-top:14px;justify-content:flex-end;">
+            <button id="closeAddressResultModalBtn" type="button">确定</button>
+        </div>
     </div>
 </div>
 
