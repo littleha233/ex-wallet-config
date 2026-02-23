@@ -11,6 +11,8 @@ public interface CoinChainConfigRepository extends JpaRepository<CoinChainConfig
 
     List<CoinChainConfig> findAllByOrderByIdDesc();
 
+    List<CoinChainConfig> findByChainCodeIgnoreCase(String chainCode);
+
     boolean existsByCoinIdAndBlockchainId(Long coinId, Integer blockchainId);
 
     boolean existsByCoinIdAndBlockchainIdAndIdNot(Long coinId, Integer blockchainId, Long id);

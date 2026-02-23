@@ -144,9 +144,9 @@ function configToUpdatePayload(config, extraJsonCompactText) {
     const chainFromMap = blockchainMap.get(String(config.chainCode || '').toUpperCase());
     return {
         coinId: config.coinId,
-        blockchainId: config.blockchainId ?? (chainFromMap ? chainFromMap.blockchainId : null),
+        blockchainId: chainFromMap ? chainFromMap.blockchainId : config.blockchainId,
         chainCode: config.chainCode,
-        chainName: config.chainName || (chainFromMap ? chainFromMap.chainName : ''),
+        chainName: chainFromMap ? chainFromMap.chainName : config.chainName,
         rpcUrl: config.rpcUrl,
         collectionAddress: config.collectionAddress,
         withdrawAddress: config.withdrawAddress,
@@ -355,8 +355,11 @@ async function openEditModal(config) {
     formCoinSelect.value = String(config.coinId);
     chainCodeInput.value = config.chainCode || '';
     syncChainNameByCode();
-    blockchainIdInput.value = config.blockchainId ?? blockchainIdInput.value;
-    chainNameInput.value = config.chainName || chainNameInput.value;
+    const chainFromMap = blockchainMap.get(String(config.chainCode || '').toUpperCase());
+    if (!chainFromMap) {
+        blockchainIdInput.value = config.blockchainId ?? '';
+        chainNameInput.value = config.chainName || '';
+    }
     rpcUrlInput.value = config.rpcUrl || '';
     collectionAddressInput.value = config.collectionAddress || '';
     withdrawAddressInput.value = config.withdrawAddress || '';
