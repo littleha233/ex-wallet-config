@@ -57,5 +57,5 @@
       </value>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-25" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Java SE 21.0.3" project-jdk-type="JavaSDK" />
 </project>

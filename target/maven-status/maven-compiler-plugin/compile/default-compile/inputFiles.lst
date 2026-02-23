@@ -36,6 +36,7 @@
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/error/IntegrationException.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/controller/CoinApiController.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/web/ApiErrorResponse.java
+/Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/config/DefaultConfigDataInitializer.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/auth/service/UserAccountService.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/common/error/BusinessException.java
 /Users/meng/IdeaProjects/ex-wallet-config/src/main/java/com/example/springdemo/auth/controller/AuthController.java

@@ -23,6 +23,7 @@ com/example/springdemo/controller/CoinApiController$UploadCoinIconResponse.class
 com/example/springdemo/security/service/AuthUserDetailsService.class
 com/example/springdemo/config/CoinIconProperties.class
 com/example/springdemo/domain/BlockchainConfig.class
+com/example/springdemo/config/DefaultConfigDataInitializer.class
 com/example/springdemo/common/error/ErrorCode.class
 com/example/springdemo/service/ConfigFacadeService.class
 com/example/springdemo/service/CoinService.class

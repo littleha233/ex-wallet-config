@@ -1,12 +1,12 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: ex-wallet-config
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/springdemo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:Littleha233!}
   jpa:
@@ -33,3 +33,7 @@ coin:
     upload-dir: ${COIN_ICON_UPLOAD_DIR:./uploads/coin-icons}
     public-path: ${COIN_ICON_PUBLIC_PATH:/uploads/coin-icons}
     max-size-kb: ${COIN_ICON_MAX_SIZE_KB:512}
+
+app:
+  bootstrap:
+    seed-default-config-data: ${APP_BOOTSTRAP_SEED_DEFAULT_CONFIG_DATA:false}

@@ -15,6 +15,16 @@
 mvn spring-boot:run
 ```
 
+默认直接连接本地 MySQL（`springdemo`）。
+
+如需覆盖连接参数，使用环境变量：
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+如需在空库自动写入一组演示配置数据，可设置：
+- `APP_BOOTSTRAP_SEED_DEFAULT_CONFIG_DATA=true`
+
 启动后访问：
 - 登录页：`http://localhost:8080/login`
 - 注册页：`http://localhost:8080/register`
