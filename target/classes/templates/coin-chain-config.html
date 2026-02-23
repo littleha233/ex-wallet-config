@@ -60,19 +60,6 @@
             gap: 6px;
         }
 
-        .field-inline-action {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 2px;
-        }
-
-        .field-inline-note {
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.2;
-        }
-
         label {
             font-size: 12px;
             color: var(--muted);
@@ -100,6 +87,14 @@
             gap: 8px;
             flex-wrap: wrap;
             align-items: center;
+        }
+
+        .action-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         button {
@@ -362,10 +357,6 @@
                     <div class="field">
                         <label for="filterCoinSelect">币种</label>
                         <select id="filterCoinSelect"></select>
-                        <div class="field-inline-action">
-                            <button id="generateSystemAddressBtn" type="button" class="ghost">生成系统地址</button>
-                            <span class="field-inline-note">先勾选一条配置，再点击生成</span>
-                        </div>
                     </div>
                     <div class="field">
                         <label for="filterChainCode">链简称/链全称</label>
@@ -384,9 +375,12 @@
                         <div class="btns">
                             <button id="searchBtn" type="button">查询</button>
                             <button id="resetFilterBtn" type="button" class="ghost">重置</button>
-                            <button id="addConfigBtn" type="button">新增扩展参数</button>
                         </div>
                     </div>
+                </div>
+                <div class="action-row">
+                    <button id="addConfigBtn" type="button">新增扩展参数</button>
+                    <button id="generateSystemAddressBtn" type="button">生成系统地址</button>
                 </div>
                 <div id="pageMsg" class="msg"></div>
             </section>
